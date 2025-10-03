@@ -1,0 +1,53 @@
+{
+  "name": "backend-music-course",
+  "version": "1.0.0",
+  "main": "./dist/index.ts",
+  "scripts": {
+    "lint": "tsc",
+    "start": "node ./dist/index.js",
+    "dev": "nodemon --files ./src/index.ts",
+    "build": "tsc",
+    "postinstall": "drizzle-kit generate",
+    "sync": "ts-node src/scripts/vimeoPollingService.ts",
+    "sync:exam": "ts-node src/scripts/syncExams.ts",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/axios": "^0.9.36",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.7.8",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.10",
+    "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.30.1",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.38.3",
+    "drizzle-zod": "^0.6.1",
+    "express": "^4.21.1",
+    "google-auth-library": "^9.15.1",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.13.0",
+    "stripe": "^17.5.0",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
+  }
+}
