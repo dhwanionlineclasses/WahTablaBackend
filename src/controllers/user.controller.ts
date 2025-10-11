@@ -16,6 +16,7 @@ import asyncHandler from "../utils/asyncHandler";
 import z from "zod";
 import { changePasswordSchema } from "../schemas/changePasswordSchema";
 import { authenticateGoogleUser } from "../services/auth.service";
+import { resend } from "../lib/resend";
 
 // Cookie options for secure storage
 const cookieOptions = {
@@ -74,6 +75,100 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     }
     // Exclude sensitive fields from the response user object
     const { password: _, ...userWithoutPassword } = savedUser;
+
+    await resend.emails.send({
+      from: 'onboarding@resend.dev', // or your verified domain
+      to: validatedData.email,
+      subject: '🙏 Namaste! Welcome to Wah Tabla — Let the Rhythm Begin 🎶',
+      html: `
+    <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: hsl(240, 10%, 3.9%); padding: 30px; color: hsl(0, 0%, 98%);">
+      <div style="max-width: 600px; margin: auto; background: hsl(240, 10%, 3.9%); border-radius: 12px; overflow: hidden; border: 1px solid hsl(0, 0%, 20%);">
+
+        <div style="text-align: center; padding: 30px 20px; border-bottom: 1px solid hsl(0, 0%, 15%);">
+          <h1 style="margin: 0; font-size: 26px; color: hsl(0, 0%, 98%);">Namaste 🙏</h1>
+          <h2 style="margin-top: 10px; font-size: 20px; color: hsl(35, 100%, 60%);">Welcome to WahTabla.com</h2>
+        </div>
+
+        <div style="padding: 30px 25px;">
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            A very warm welcome to <strong>WahTabla.com!</strong><br/>
+            We’re truly delighted to have you as part of our musical family.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            At Wah Tabla, our goal is to make your learning journey inspiring and enjoyable. 
+            We hope each lesson brings you closer to discovering the beauty and depth of rhythm.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            Thank you for choosing to begin your <strong>tabla journey</strong> with us.
+          </p>
+
+          <div style="text-align: center; margin-top: 35px;">
+            <a href="https://wahtabla.com/login"
+              style="background: hsl(35, 100%, 60%); color: hsl(240, 10%, 3.9%);
+              padding: 12px 30px; text-decoration: none; border-radius: 8px;
+              font-weight: 600; font-size: 15px; letter-spacing: 0.5px;">
+              Start Your Rhythm Journey 🎵
+            </a>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid hsl(0, 0%, 15%); padding: 20px; text-align: center; font-size: 13px; color: hsl(0, 0%, 70%);">
+          © ${new Date().getFullYear()} Wah Tabla — All Rights Reserved<br/>
+          <a href="https://wahtabla.com" style="color: hsl(35, 100%, 60%); text-decoration: none;">Visit WahTabla.com</a>
+        </div>
+      </div>
+    </div>
+  `
+    });
+
+    await resend.emails.send({
+      from: 'onboarding@resend.dev', // your verified sender
+      to: 'wahhtabla@gmail.com', // or your admin email
+      subject: '🔔 New User Registration — Wah Tabla',
+      html: `
+    <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: hsl(240, 10%, 3.9%); padding: 30px; color: hsl(0, 0%, 98%);">
+      <div style="max-width: 600px; margin: auto; background: hsl(240, 10%, 3.9%); border-radius: 12px; overflow: hidden; border: 1px solid hsl(0, 0%, 20%); box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        
+        <div style="background: linear-gradient(90deg, #ff8800, #ff4b2b); padding: 20px; color: white; text-align: center;">
+          <h2 style="margin: 0;">New User Registration</h2>
+        </div>
+
+        <div style="padding: 25px;">
+          <p style="font-size: 16px;">Hello Admin,</p>
+          <p style="font-size: 16px;">
+            A new user has just registered on <strong>Wah Tabla</strong>.
+          </p>
+
+          <table style="width: 100%; font-size: 15px; border-collapse: collapse; margin-top: 10px; color: hsl(0, 0%, 90%);">
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid hsl(0, 0%, 25%);"><strong>Username:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid hsl(0, 0%, 25%);">${validatedData.username}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid hsl(0, 0%, 25%);"><strong>Email:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid hsl(0, 0%, 25%);">${validatedData.email}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid hsl(0, 0%, 25%);"><strong>Registration Date:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid hsl(0, 0%, 25%);">${new Date().toLocaleString()}</td>
+            </tr>
+          </table>
+
+          <p style="font-size: 15px; margin-top: 25px; color: hsl(0, 0%, 85%);">
+            Please check the admin dashboard for more details.
+          </p>
+        </div>
+
+        <div style="border-top: 1px solid hsl(0, 0%, 15%); background: hsl(240, 10%, 5%); padding: 15px; text-align: center; font-size: 13px; color: hsl(0, 0%, 70%);">
+          © ${new Date().getFullYear()} Wah Tabla — Admin Notification
+        </div>
+
+      </div>
+    </div>
+  `
+    });
     res
       .status(201)
       .json(
