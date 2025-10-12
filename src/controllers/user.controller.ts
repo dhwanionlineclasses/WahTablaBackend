@@ -79,49 +79,70 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     await resend.emails.send({
       from: 'onboarding@resend.dev', // or your verified domain
       to: validatedData.email,
-      subject: '🙏 Namaste! Welcome to Wah Tabla — Let the Rhythm Begin 🎶',
+      subject: 'Welcome to Wahtabla – Begin Your Musical Journey Today!',
       html: `
     <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: hsl(240, 10%, 3.9%); padding: 30px; color: hsl(0, 0%, 98%);">
       <div style="max-width: 600px; margin: auto; background: hsl(240, 10%, 3.9%); border-radius: 12px; overflow: hidden; border: 1px solid hsl(0, 0%, 20%);">
 
+        <!-- Logo -->
         <div style="text-align: center; padding: 30px 20px; border-bottom: 1px solid hsl(0, 0%, 15%);">
-          <h1 style="margin: 0; font-size: 26px; color: hsl(0, 0%, 98%);">Namaste 🙏</h1>
-          <h2 style="margin-top: 10px; font-size: 20px; color: hsl(35, 100%, 60%);">Welcome to WahTabla.com</h2>
+          <img src="https://wahtabla.com/icons/logo.svg" alt="Wahtabla Logo" width="120" style="display:block; margin:auto;"/>
         </div>
 
+        <!-- Greeting -->
         <div style="padding: 30px 25px;">
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
-            A very warm welcome to <strong>WahTabla.com!</strong><br/>
-            We’re truly delighted to have you as part of our musical family.
+            Dear <strong>${validatedData.username || 'Student'}</strong>,
           </p>
 
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
-            At Wah Tabla, our goal is to make your learning journey inspiring and enjoyable. 
-            We hope each lesson brings you closer to discovering the beauty and depth of rhythm.
+            Welcome to <strong>Wahtabla</strong>! We are delighted to have you join our community of music learners and enthusiasts. Wahtabla is designed to help you master the art of Tabla — whether you are just starting or looking to refine your skills.
           </p>
 
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
-            Thank you for choosing to begin your <strong>tabla journey</strong> with us.
+            To get started, please visit our <a href="https://wahtabla.com/courses" style="color:hsl(35, 100%, 60%); text-decoration: underline;">Courses Page</a> and choose the program best suited to your level of experience:
           </p>
 
-          <div style="text-align: center; margin-top: 35px;">
-            <a href="https://wahtabla.com/login"
+          <ul style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%); padding-left: 20px;">
+            <li>🎵 <strong>Beginner Course:</strong> Perfect for those who are new to Tabla or Indian rhythm.</li>
+            <li>🎶 <strong>Intermediate Course:</strong> Designed for students who already have a foundation and want to build performance-level proficiency.</li>
+            <li>🥁 <strong>Advanced Course:</strong> For serious learners aspiring to perform or teach professionally.</li>
+          </ul>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            Once you’ve selected your course, simply follow the prompts to complete your enrollment. You will receive instant access to your lessons and learning resources.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            If you need help choosing the right level or have any questions, our support team is happy to assist — just write to us at <a href="mailto:support@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">support@wahtabla.com</a>.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            We look forward to being part of your musical journey!<br/>
+            Welcome aboard,<br/>
+            <strong>Team Wahtabla</strong>
+          </p>
+
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="https://wahtabla.com" 
               style="background: hsl(35, 100%, 60%); color: hsl(240, 10%, 3.9%);
               padding: 12px 30px; text-decoration: none; border-radius: 8px;
               font-weight: 600; font-size: 15px; letter-spacing: 0.5px;">
-              Start Your Rhythm Journey 🎵
+              Visit Wahtabla
             </a>
           </div>
         </div>
 
+        <!-- Footer -->
         <div style="border-top: 1px solid hsl(0, 0%, 15%); padding: 20px; text-align: center; font-size: 13px; color: hsl(0, 0%, 70%);">
-          © ${new Date().getFullYear()} Wah Tabla — All Rights Reserved<br/>
-          <a href="https://wahtabla.com" style="color: hsl(35, 100%, 60%); text-decoration: none;">Visit WahTabla.com</a>
+          © ${new Date().getFullYear()} Wahtabla — All Rights Reserved<br/>
+          <a href="https://wahtabla.com" style="color: hsl(35, 100%, 60%); text-decoration: none;">www.wahtabla.com</a>
         </div>
       </div>
     </div>
   `
     });
+
 
     await resend.emails.send({
       from: 'onboarding@resend.dev', // your verified sender
