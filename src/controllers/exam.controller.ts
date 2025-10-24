@@ -20,11 +20,15 @@ import {
   assignmentSubmissions,
   courses,
   years,
-  orders
+  orders,
+  entranceExams,
+  entranceMcqQuestions,
+  entranceMcqOptions
 } from "../models";
 
 import {
   getExamSchema,
+  getEntranceExamSchema,
   submitMcqSchema,
   submitAssignmentSchema,
   submitFinalExamSchema
@@ -176,6 +180,83 @@ async function getMcqQuestions(examId: number) {
       .from(mcqOptions)
       .where(eq(mcqOptions.questionId, question.questionId))
       .orderBy(mcqOptions.optionOrder);
+
+    questions.push({
+      questionId: question.questionId,
+      question: question.question,
+      questionOrder: question.questionOrder,
+      options: optionsResults
+    });
+  }
+  return questions;
+}
+
+
+const getEntranceExam = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const user = req.user;
+  const userId = user?.userId;
+  if (!userId) {
+    throw new ApiError(401, 'User not authenticated');
+  }
+  console.log('Fetching exam with userId:', userId);
+  try {
+    const { courseId } = getEntranceExamSchema.parse(req.query);
+
+    const examResults = await db.select()
+      .from(entranceExams)
+      .where(and(
+        eq(examsTable.courseId, courseId)
+      ))
+      .limit(1);
+
+    if (examResults.length === 0) {
+      throw new ApiError(404, 'Exam not found');
+    }
+
+    const exam = examResults[0];
+
+    const baseResponse = {
+      examId: exam.examId,
+      courseId: exam.courseId,
+      title: exam.title,
+      isActive: exam.isActive,
+      totalMarks: exam.totalMarks,
+    };
+
+    let response: any = { ...baseResponse };
+    const mcqQuestions = await getEntranceMcqQuestions(exam.examId);
+    response.questions = mcqQuestions;
+
+    res.status(200).json(
+      new ApiResponse(200, response, 'Exam retrieved successfully')
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ApiError(400, error.errors[0].message);
+    }
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'An error occurred while fetching exam');
+  }
+});
+
+async function getEntranceMcqQuestions(examId: number) {
+  const questionsResults = await db.select()
+    .from(entranceMcqQuestions)
+    .where(eq(entranceMcqQuestions.examId, examId))
+    .orderBy(entranceMcqQuestions.questionOrder);
+
+  const questions = [];
+  for (const question of questionsResults) {
+    const optionsResults = await db.select({
+      optionId: entranceMcqOptions.optionId,
+      optionText: entranceMcqOptions.optionText,
+      optionOrder: entranceMcqOptions.optionOrder
+    })
+      .from(entranceMcqOptions)
+      .where(eq(entranceMcqOptions.questionId, question.questionId))
+      .orderBy(entranceMcqOptions.optionOrder);
 
     questions.push({
       questionId: question.questionId,
@@ -1163,5 +1244,6 @@ export {
   getCourseExams,
   submitMcqExam,
   submitAssignmentExam,
-  submitFinalExam
+  submitFinalExam,
+  getEntranceExam
 };
