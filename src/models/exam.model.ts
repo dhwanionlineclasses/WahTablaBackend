@@ -5,6 +5,7 @@ import { courses } from './course.model';
 import { users } from './user.model';
 import { admins } from './admin.model';
 import { mcqQuestions, mcqResponses } from './mcq.model';
+import { entranceMcqQuestions } from './entrance.mcq.model';
 import { assignmentSubmissions } from './assignment.model';
 import { assignmentQuestions } from './assignmentQuestion.model';
 import { finalExamSections } from './finalExam.model';
@@ -42,6 +43,25 @@ export const examsRelations = relations(exams, ({ one, many }) => ({
   finalExamSections: many(finalExamSections)
 }));
 
+export const entranceExams = pgTable('entrance_exams', {
+  examId: serial('exam_id').primaryKey(),
+  courseId: integer('course_id').references(() => courses.courseId).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  totalMarks: integer('total_marks'), // For final exams
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+export const entranceExamsRelations = relations(entranceExams, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [entranceExams.courseId],
+    references: [courses.courseId],
+  }),
+  attempts: many(examAttempts),
+  mcqQuestions: many(entranceMcqQuestions),
+}));
+
 export const examAttempts = pgTable('exam_attempts', {
   attemptId: serial('attempt_id').primaryKey(),
   examId: integer('exam_id').references(() => exams.examId).notNull(),
@@ -77,10 +97,14 @@ export const examAttemptsRelations = relations(examAttempts, ({ one, many }) => 
 
 export type Exam = typeof exams.$inferSelect;
 export type NewExam = typeof exams.$inferInsert;
+export type EntranceExam = typeof entranceExams.$inferSelect;
+export type NewEntranceExam = typeof entranceExams.$inferInsert;
 export type ExamAttempt = typeof examAttempts.$inferSelect;
 export type NewExamAttempt = typeof examAttempts.$inferInsert;
 
 export const examSchema = createInsertSchema(exams);
 export const examSchemaSelect = createSelectSchema(exams);
+export const entranceExamSchema = createInsertSchema(entranceExams);
+export const entranceExamSchemaSelect = createSelectSchema(entranceExams);
 export const examAttemptSchema = createInsertSchema(examAttempts);
 export const examAttemptSchemaSelect = createSelectSchema(examAttempts);
