@@ -107,14 +107,13 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
                     itemName: itemName,
                 });
 
+                await db.update(users).set({ purchasePlan: itemName }).where(eq(users.userId, userId));
+
                 console.log('✅ Order created successfully:', order);
                 console.log('✅ Order Item created successfully:', orderItem);
 
-                // -------------------------------
-                // 💌 Send Custom Confirmation Email
-                // -------------------------------
                 await resend.emails.send({
-                    from: 'hello@wahtabla.com', // your verified sender domain
+                    from: 'onboarding@resend.dev', // your verified sender domain
                     to: emailId,
                     subject: `🎶 Payment Successful — Your ${itemName} is Ready!`,
                     html: `
