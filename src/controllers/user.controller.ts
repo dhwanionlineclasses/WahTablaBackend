@@ -147,7 +147,6 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   `
     });
 
-
     await resend.emails.send({
       from: 'onboarding@resend.dev', // your verified sender
       to: 'wahhtabla@gmail.com', // or your admin email
@@ -194,6 +193,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     </div>
   `
     });
+
     res
       .status(201)
       .json(
@@ -514,7 +514,9 @@ const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
 const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   try {
+    console.log("Reached...")
     const { email } = forgotPasswordSchema.parse(req.body);
+    console.log({ email })
     // find the user
     const user: User[] = await db
       .select()
@@ -597,9 +599,7 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
     res.status(200).json(
       new ApiResponse(
         200,
-        {
-          user: user[0]
-        },
+        null,
         "Password reset link sent to your email."
       )
     );
