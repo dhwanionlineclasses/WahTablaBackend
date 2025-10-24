@@ -514,9 +514,7 @@ const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
 const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   try {
-    console.log("Reached...")
     const { email } = forgotPasswordSchema.parse(req.body);
-    console.log({ email })
     // find the user
     const user: User[] = await db
       .select()
