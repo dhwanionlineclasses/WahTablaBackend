@@ -7,6 +7,7 @@ import ApiError from "../utils/ApiError";
 import { comparePassword, hashPassword } from "../utils/passwordUtils";
 import ApiResponse from "../utils/ApiResponse";
 import { loginSchema } from "../schemas/loginSchema";
+import { forgotPasswordSchema, resetPasswordSchema } from "../schemas/resetPasswordSchema";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -17,6 +18,9 @@ import z from "zod";
 import { changePasswordSchema } from "../schemas/changePasswordSchema";
 import { authenticateGoogleUser } from "../services/auth.service";
 import { resend } from "../lib/resend";
+import { nanoid } from "nanoid";
+import { passwordResets } from "../models";
+import { addHours } from "date-fns";
 
 // Cookie options for secure storage
 const cookieOptions = {
@@ -508,4 +512,165 @@ const getUsers = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { registerUser, loginUser, refreshAccessToken, logoutUser, changePassword, googleAuthController, getUsers };
+const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+    // find the user
+    const user: User[] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (user.length === 0) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const token = nanoid(64)
+    const expiresAt = addHours(new Date(), 1);
+
+    await db.insert(passwordResets).values({
+      userId: user[0].userId,
+      token,
+      expiresAt,
+    });
+
+    const resetLink = `https://wahtabla.com/reset-password?token=${token}`;
+
+    await resend.emails.send({
+      from: 'onboarding@resend.dev', // or your verified domain
+      to: user[0].email,
+      subject: 'Reset Your Wahtabla Password',
+      html: `
+  <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: hsl(240, 10%, 3.9%); padding: 30px; color: hsl(0, 0%, 98%);">
+    <div style="max-width: 600px; margin: auto; background: hsl(240, 10%, 3.9%); border-radius: 12px; overflow: hidden; border: 1px solid hsl(0, 0%, 20%);">
+
+      <!-- Logo -->
+      <div style="text-align: center; padding: 30px 20px; border-bottom: 1px solid hsl(0, 0%, 15%);">
+        <img src="https://wahtabla.com/icons/logo.svg" alt="Wahtabla Logo" width="120" style="display:block; margin:auto;"/>
+      </div>
+
+      <!-- Greeting -->
+      <div style="padding: 30px 25px;">
+        <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+          Dear <strong>${user[0].username || 'Student'}</strong>,
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+          We received a request to reset your password for your <strong>Wahtabla</strong> account. Click the button below to choose a new password:
+        </p>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetLink}" 
+            style="background: hsl(35, 100%, 60%); color: hsl(240, 10%, 3.9%);
+            padding: 12px 30px; text-decoration: none; border-radius: 8px;
+            font-weight: 600; font-size: 15px; letter-spacing: 0.5px;">
+            Reset Password
+          </a>
+        </div>
+
+        <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+          If you did not request a password reset, you can safely ignore this email — your account is secure.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+          For any help, contact our support team at <a href="mailto:support@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">support@wahtabla.com</a>.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+          Happy learning,<br/>
+          <strong>Team Wahtabla</strong>
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="border-top: 1px solid hsl(0, 0%, 15%); padding: 20px; text-align: center; font-size: 13px; color: hsl(0, 0%, 70%);">
+        © ${new Date().getFullYear()} Wahtabla — All Rights Reserved<br/>
+        <a href="https://wahtabla.com" style="color: hsl(35, 100%, 60%); text-decoration: none;">www.wahtabla.com</a>
+      </div>
+
+    </div>
+  </div>
+  `
+    });
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          user: user[0]
+        },
+        "Password reset link sent to your email."
+      )
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        message: error.errors[0].message,
+      });
+    }
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, "An error occurred while resetting the password for user");
+  }
+});
+
+const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = resetPasswordSchema.parse(req.body);
+
+    if (!token || !newPassword) {
+      res.status(400).json({ error: "Token and new password are required" });
+      return; // stop execution
+    }
+
+    const [resetEntry] = await db
+      .select()
+      .from(passwordResets)
+      .where(eq(passwordResets.token, token));
+
+    if (!resetEntry) {
+      res.status(400).json({ error: "Invalid token" });
+      return;
+    }
+
+    if (new Date(resetEntry.expiresAt) < new Date()) {
+      res.status(400).json({ error: "Token expired" });
+      return;
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await db.update(users).set({ password: hashedPassword }).where(eq(users.userId, resetEntry.userId));
+    await db.delete(passwordResets).where(eq(passwordResets.token, token));
+
+    // ✅ Do NOT return anything
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        null,
+        "Password reset successful"
+      )
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        message: error.errors[0].message,
+      });
+      return;
+    }
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(500, "An error occurred while resetting the password for user");
+  }
+});
+
+
+
+export { registerUser, loginUser, refreshAccessToken, logoutUser, changePassword, googleAuthController, getUsers, forgotPassword, resetPassword };
