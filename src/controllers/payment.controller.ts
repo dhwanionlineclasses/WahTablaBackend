@@ -107,7 +107,7 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
                     itemName: itemName,
                 });
 
-                await db.update(users).set({ purchasePlan: itemName }).where(eq(users.userId, userId));
+                await db.update(users).set({ purchasePlan: metadata.type }).where(eq(users.userId, userId));
 
                 console.log('✅ Order created successfully:', order);
                 console.log('✅ Order Item created successfully:', orderItem);
