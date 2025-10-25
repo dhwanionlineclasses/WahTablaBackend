@@ -23,7 +23,8 @@ import {
   orders,
   entranceExams,
   entranceMcqQuestions,
-  entranceMcqOptions
+  entranceMcqOptions,
+  users
 } from "../models";
 
 import {
@@ -737,6 +738,22 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
         message = `You scored ${percentage}% (${correctAnswers}/${totalQuestionsInDB} correct). You need at least 50% to pass. You have ${remainingAttempts} attempts remaining today.`;
       } else {
         message = `You scored ${percentage}% (${correctAnswers}/${totalQuestionsInDB} correct). You need at least 50% to pass. You have reached the daily limit. You can try again tomorrow.`;
+      }
+    }
+
+    if (passed) {
+      if (examId == 2) {
+        await db.update(users)
+          .set({
+            bibhusanActive: true
+          })
+          .where(eq(users.userId, userId));
+      } else if (examId == 3) {
+        await db.update(users)
+          .set({
+            ratnaActive: true
+          })
+          .where(eq(users.userId, userId));
       }
     }
 
