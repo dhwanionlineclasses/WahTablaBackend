@@ -225,7 +225,6 @@ const getEntranceExam = asyncHandler(async (req: Request, res: Response, next: N
     let response: any = { ...baseResponse };
     const mcqQuestions = await getEntranceMcqQuestions(exam.examId);
     response.questions = mcqQuestions;
-    console.log(mcqQuestions)
 
     res.status(200).json(
       new ApiResponse(200, response, 'Exam retrieved successfully')
@@ -658,9 +657,9 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
       const lastAttemptDate = new Date(existingAttempt[0].submittedAt!);
       const isToday = today.toDateString() === lastAttemptDate.toDateString();
 
-      if (isToday && existingAttempt[0].attemptNumber >= 3) {
-        throw new ApiError(429, `You have reached the daily limit of 3 attempts for this MCQ exam. You can try again tomorrow.`);
-      }
+      // if (isToday && existingAttempt[0].attemptNumber >= 3) {
+      //   throw new ApiError(429, `You have reached the daily limit of 3 attempts for this MCQ exam. You can try again tomorrow.`);
+      // }
 
       currentAttemptNumber = isToday ? existingAttempt[0].attemptNumber + 1 : 1;
 
