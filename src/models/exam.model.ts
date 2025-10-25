@@ -70,7 +70,8 @@ export const examAttempts = pgTable('exam_attempts', {
   passed: boolean('passed').default(false),
   submittedAt: timestamp('submitted_at').defaultNow(),
   gradedAt: timestamp('graded_at'),
-  gradedBy: integer('graded_by').references(() => admins.adminId)
+  gradedBy: integer('graded_by').references(() => admins.adminId),
+  entranceExamId: integer('entrance_exam_id').references(() => entranceExams.examId),
 }, (table) => ({
   uniqueUserExam: unique().on(table.examId, table.userId)
 }));
@@ -79,6 +80,10 @@ export const examAttemptsRelations = relations(examAttempts, ({ one, many }) => 
   exam: one(exams, {
     fields: [examAttempts.examId],
     references: [exams.examId],
+  }),
+  entranceExam: one(entranceExams, {
+    fields: [examAttempts.entranceExamId],
+    references: [entranceExams.examId],
   }),
   user: one(users, {
     fields: [examAttempts.userId],

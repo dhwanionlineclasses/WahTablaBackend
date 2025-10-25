@@ -642,7 +642,7 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
       .from(examAttempts)
       .where(and(
         eq(examAttempts.userId, userId),
-        eq(examAttempts.examId, examId)
+        eq(examAttempts.entranceExamId, examId)
       ))
       .limit(1);
 

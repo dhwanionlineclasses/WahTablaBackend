@@ -2,11 +2,11 @@
 import { pgTable, serial, integer, varchar, boolean, timestamp, text } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { exams, examAttempts } from './exam.model';
+import { exams, examAttempts, entranceExams } from './exam.model';
 
 export const entranceMcqQuestions = pgTable('entrance_mcq_questions', {
   questionId: serial('question_id').primaryKey(),
-  examId: integer('exam_id').references(() => exams.examId).notNull(),
+  examId: integer('exam_id').references(() => entranceExams.examId).notNull(),
   question: text('question').notNull(),
   questionOrder: integer('question_order').notNull(),
   createdAt: timestamp('created_at').defaultNow()
@@ -30,9 +30,9 @@ export const entranceMcqResponses = pgTable('entrance_mcq_responses', {
 });
 
 export const entranceMcqQuestionsRelations = relations(entranceMcqQuestions, ({ one, many }) => ({
-  exam: one(exams, {
+  exam: one(entranceExams, {
     fields: [entranceMcqQuestions.examId],
-    references: [exams.examId],
+    references: [entranceExams.examId],
   }),
   options: many(entranceMcqOptions),
   responses: many(entranceMcqResponses)
