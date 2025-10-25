@@ -5,7 +5,9 @@ import {
     getCourseExams,
     submitMcqExam,
     submitAssignmentExam,
-    submitFinalExam 
+    submitFinalExam,
+    getEntranceExam,
+    submitEntranceMcqExam
 } from '../controllers/exam.controller';
 import  verifyJWT  from '../middlewares/auth.middleware';
 
@@ -14,10 +16,12 @@ const router = Router();
 router.use(verifyJWT);
 
 router.get('/exam', getExam);
+router.get('/entrance-exam', getEntranceExam);
 
 // Get all exams for a course/year
 router.get('/course/:courseId/year/:yearId/exams', getCourseExams);
 router.post('/mcq/submit', submitMcqExam);
+router.post('/emcq/submit', submitEntranceMcqExam);
 router.post('/assignment/submit', submitAssignmentExam);
 router.post('/final/submit', submitFinalExam);
 

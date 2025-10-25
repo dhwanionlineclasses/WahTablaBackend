@@ -20,11 +20,16 @@ import {
   assignmentSubmissions,
   courses,
   years,
-  orders
+  orders,
+  entranceExams,
+  entranceMcqQuestions,
+  entranceMcqOptions,
+  users
 } from "../models";
 
 import {
   getExamSchema,
+  getEntranceExamSchema,
   submitMcqSchema,
   submitAssignmentSchema,
   submitFinalExamSchema
@@ -176,6 +181,82 @@ async function getMcqQuestions(examId: number) {
       .from(mcqOptions)
       .where(eq(mcqOptions.questionId, question.questionId))
       .orderBy(mcqOptions.optionOrder);
+
+    questions.push({
+      questionId: question.questionId,
+      question: question.question,
+      questionOrder: question.questionOrder,
+      options: optionsResults
+    });
+  }
+  return questions;
+}
+
+
+const getEntranceExam = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const user = req.user;
+  const userId = user?.userId;
+  if (!userId) {
+    throw new ApiError(401, 'User not authenticated');
+  }
+  try {
+    const { courseId } = getEntranceExamSchema.parse(req.query);
+
+    const examResults = await db.select()
+      .from(entranceExams)
+      .where(and(
+        eq(entranceExams.courseId, courseId)
+      ))
+      .limit(1);
+
+    if (examResults.length === 0) {
+      throw new ApiError(404, 'Exam not found');
+    }
+
+    const exam = examResults[0];
+
+    const baseResponse = {
+      examId: exam.examId,
+      courseId: exam.courseId,
+      title: exam.title,
+      isActive: exam.isActive,
+      totalMarks: exam.totalMarks,
+    };
+
+    let response: any = { ...baseResponse };
+    const mcqQuestions = await getEntranceMcqQuestions(exam.examId);
+    response.questions = mcqQuestions;
+
+    res.status(200).json(
+      new ApiResponse(200, response, 'Exam retrieved successfully')
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ApiError(400, error.errors[0].message);
+    }
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'An error occurred while fetching exam');
+  }
+});
+
+async function getEntranceMcqQuestions(examId: number) {
+  const questionsResults = await db.select()
+    .from(entranceMcqQuestions)
+    .where(eq(entranceMcqQuestions.examId, examId))
+    .orderBy(entranceMcqQuestions.questionOrder);
+
+  const questions = [];
+  for (const question of questionsResults) {
+    const optionsResults = await db.select({
+      optionId: entranceMcqOptions.optionId,
+      optionText: entranceMcqOptions.optionText,
+      optionOrder: entranceMcqOptions.optionOrder
+    })
+      .from(entranceMcqOptions)
+      .where(eq(entranceMcqOptions.questionId, question.questionId))
+      .orderBy(entranceMcqOptions.optionOrder);
 
     questions.push({
       questionId: question.questionId,
@@ -486,6 +567,193 @@ const submitMcqExam = asyncHandler(async (req: Request, res: Response, next: Nex
         message = `You scored ${percentage}% (${correctAnswers}/${totalQuestionsInDB} correct). You need at least 50% to pass. You have ${remainingAttempts} attempts remaining today.`;
       } else {
         message = `You scored ${percentage}% (${correctAnswers}/${totalQuestionsInDB} correct). You need at least 50% to pass. You have reached the daily limit. You can try again tomorrow.`;
+      }
+    }
+
+    res.status(200).json(
+      new ApiResponse(200, {
+        attemptId: attempt.attemptId,
+        examId,
+        attemptNumber: currentAttemptNumber,
+        totalQuestionsInExam: totalQuestionsInDB,
+        questionsAnswered: responses.length,
+        correctAnswers,
+        incorrectAnswers: totalQuestionsInDB - correctAnswers,
+        unansweredQuestions,
+        percentage,
+        passed,
+        passThreshold: 50,
+        remainingAttemptsToday: remainingAttempts,
+        canRetakeToday: remainingAttempts > 0 && !passed,
+        gradedAt: new Date(),
+        message
+      }, 'MCQ exam submitted and graded successfully')
+    );
+
+  } catch (error) {
+    console.error('MCQ submission error:', error);
+
+    if (error instanceof z.ZodError) {
+      throw new ApiError(400, error.errors[0].message);
+    }
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'An error occurred while submitting MCQ exam');
+  }
+});
+
+const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const user = req.user as UserWithoutPassword;
+  const userId = user?.userId;
+  if (!userId) {
+    throw new ApiError(401, 'User not authenticated');
+  }
+
+  try {
+    const { examId, responses } = submitMcqSchema.parse(req.body);
+
+    const examResults = await db.select()
+      .from(entranceExams)
+      .where(eq(entranceExams.examId, examId))
+      .limit(1);
+
+    if (!examResults.length) {
+      throw new ApiError(404, 'Entrance exam not found');
+    }
+
+    const examQuestions = await db.select()
+      .from(entranceMcqQuestions)
+      .where(eq(entranceMcqQuestions.examId, examId));
+
+    if (examQuestions.length === 0) {
+      throw new ApiError(404, 'No MCQ questions found for this exam. Please contact admin.');
+    }
+
+    const totalQuestionsInDB = examQuestions.length;
+
+    if (!responses || responses.length === 0) {
+      throw new ApiError(400, 'No responses provided');
+    }
+
+    const unansweredQuestions = totalQuestionsInDB - responses.length;
+
+    const existingAttempt = await db.select()
+      .from(examAttempts)
+      .where(and(
+        eq(examAttempts.userId, userId),
+        eq(examAttempts.entranceExamId, examId)
+      ))
+      .limit(1);
+
+    let attempt;
+    let currentAttemptNumber;
+
+    if (existingAttempt.length > 0) {
+      if (existingAttempt[0].passed) {
+        throw new ApiError(400, 'You have already passed this MCQ exam');
+      }
+
+      const today = new Date();
+      const lastAttemptDate = new Date(existingAttempt[0].submittedAt!);
+      const isToday = today.toDateString() === lastAttemptDate.toDateString();
+
+      // if (isToday && existingAttempt[0].attemptNumber >= 3) {
+      //   throw new ApiError(429, `You have reached the daily limit of 3 attempts for this MCQ exam. You can try again tomorrow.`);
+      // }
+
+      currentAttemptNumber = isToday ? existingAttempt[0].attemptNumber + 1 : 1;
+
+      const [updatedAttempt] = await db.update(examAttempts)
+        .set({
+          attemptNumber: currentAttemptNumber,
+          submittedAt: new Date(),
+          passed: false,
+          gradedAt: null,
+          gradedBy: null
+        })
+        .where(eq(examAttempts.attemptId, existingAttempt[0].attemptId))
+        .returning();
+
+      attempt = updatedAttempt;
+    } else {
+      currentAttemptNumber = 1;
+
+      const [newAttempt] = await db.insert(examAttempts)
+        .values({
+          examId,
+          userId,
+          attemptNumber: currentAttemptNumber,
+          submittedAt: new Date()
+        })
+        .returning();
+
+      attempt = newAttempt;
+    }
+
+
+    const questionIds = examQuestions.map(q => q.questionId);
+    const submittedQuestionIds = responses.map(r => r.questionId);
+
+    for (const submittedId of submittedQuestionIds) {
+      if (!questionIds.includes(submittedId)) {
+        throw new ApiError(400, `Question ID ${submittedId} does not exist for this exam`);
+      }
+    }
+
+    let correctAnswers = 0;
+
+    for (const response of responses) {
+      const optionResults = await db.select()
+        .from(entranceMcqOptions)
+        .where(eq(entranceMcqOptions.optionId, response.selectedOptionId))
+        .limit(1);
+
+      if (optionResults.length === 0) {
+        throw new ApiError(400, `Option ID ${response.selectedOptionId} does not exist for question ${response.questionId}`);
+      }
+
+      if (optionResults[0].isCorrect) {
+        correctAnswers++;
+      }
+    }
+
+    const percentage = Math.round((correctAnswers / totalQuestionsInDB) * 100);
+    const passed = percentage >= 50;
+
+    await db.update(examAttempts)
+      .set({
+        passed,
+        gradedAt: new Date()
+      })
+      .where(eq(examAttempts.attemptId, attempt.attemptId));
+
+    const remainingAttempts = passed ? 0 : Math.max(0, 3 - currentAttemptNumber);
+
+    let message = '';
+    if (passed) {
+      message = `Congratulations! You passed with ${percentage}% (${correctAnswers}/${totalQuestionsInDB} correct)`;
+    } else {
+      if (remainingAttempts > 0) {
+        message = `You scored ${percentage}% (${correctAnswers}/${totalQuestionsInDB} correct). You need at least 50% to pass. You have ${remainingAttempts} attempts remaining today.`;
+      } else {
+        message = `You scored ${percentage}% (${correctAnswers}/${totalQuestionsInDB} correct). You need at least 50% to pass. You have reached the daily limit. You can try again tomorrow.`;
+      }
+    }
+
+    if (!passed) {
+      if ('bibhusan'.includes(examResults[0].title.toLowerCase())) {
+        await db.update(users)
+        .set({
+          bibhusanActive: true
+        })
+        .where(eq(users.userId, userId));
+      } else if ('ratna'.includes(examResults[0].title.toLowerCase())) {
+        await db.update(users)
+          .set({
+            ratnaActive: true
+          })
+          .where(eq(users.userId, userId));
       }
     }
 
@@ -1163,5 +1431,7 @@ export {
   getCourseExams,
   submitMcqExam,
   submitAssignmentExam,
-  submitFinalExam
+  submitFinalExam,
+  getEntranceExam,
+  submitEntranceMcqExam
 };

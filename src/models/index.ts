@@ -17,3 +17,5 @@ export * from './exam.model';
 export * from './assignmentQuestion.model';
 export * from './finalExam.model';
 export * from './videoAnalytics.model';
+export * from './resetPassword.model';
+export * from './entrance.mcq.model';

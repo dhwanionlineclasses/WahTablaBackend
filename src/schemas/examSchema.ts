@@ -7,6 +7,10 @@ export const getExamSchema = z.object({
   type: z.enum(['mcq', 'assignment', 'final'])
 });
 
+export const getEntranceExamSchema = z.object({
+  courseId: z.string().transform(Number),
+});
+
 export const submitMcqSchema = z.object({
   examId: z.number(),
   responses: z.array(z.object({
