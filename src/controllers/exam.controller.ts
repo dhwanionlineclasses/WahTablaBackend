@@ -741,14 +741,14 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
       }
     }
 
-    if (passed) {
-      if (examId == 2) {
+    if (!passed) {
+      if ('bibhusan'.includes(examResults[0].title.toLowerCase())) {
         await db.update(users)
-          .set({
-            bibhusanActive: true
-          })
-          .where(eq(users.userId, userId));
-      } else if (examId == 3) {
+        .set({
+          bibhusanActive: true
+        })
+        .where(eq(users.userId, userId));
+      } else if ('ratna'.includes(examResults[0].title.toLowerCase())) {
         await db.update(users)
           .set({
             ratnaActive: true
