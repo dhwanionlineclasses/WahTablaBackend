@@ -961,6 +961,103 @@ export const updateExamAttempt = async (req: AdminRequest, res: Response): Promi
   }
 };
 
+export const updateEntranceExamAttempt = async (req: AdminRequest, res: Response): Promise<void> => {
+  try {
+    const { passed, feedback, marks, attemptId } = req.body;
+
+    if (typeof passed !== 'boolean') {
+      res.status(400).json({
+        success: false,
+        message: 'Pass/fail status (passed) is required and must be boolean'
+      });
+      return;
+    }
+
+    const adminId = req.admin?.adminId;
+    if (!adminId) {
+      res.status(401).json({
+        success: false,
+        message: 'Admin authentication required'
+      });
+      return;
+    }
+
+    const attemptIdNum = Number(attemptId);
+    if (isNaN(attemptIdNum)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid attempt ID'
+      });
+      return;
+    }
+
+    const attemptData = await db
+      .select({
+        attemptId: entranceExamAttempts.attemptId,
+        examId: entranceExamAttempts.entranceExamId,
+        userId: entranceExamAttempts.userId,
+        passed: entranceExamAttempts.passed,
+        gradedAt: entranceExamAttempts.gradedAt,
+      })
+      .from(entranceExamAttempts)
+      .innerJoin(exams, eq(entranceExamAttempts.entranceExamId, entranceExams.examId))
+      .where(eq(entranceExamAttempts.attemptId, attemptIdNum))
+      .limit(1);
+
+    if (attemptData.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: 'Exam attempt not found'
+      });
+      return;
+    }
+
+    const attempt = attemptData[0];
+    if (attempt.gradedAt) {
+      res.status(400).json({
+        success: false,
+        message: 'This exam attempt has already been graded'
+      });
+      return;
+    }
+
+    const exam = await db.select().from(entranceExams).where(eq(entranceExams.examId, attempt.examId)).limit(1)
+
+    const userId = attempt.userId
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(entranceExamAttempts)
+        .set({
+          passed: passed,
+          gradedAt: new Date(),
+          gradedBy: adminId,
+        })
+        .where(eq(entranceExamAttempts.attemptId, attemptIdNum));
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Exam attempt updated successfully',
+      data: {
+        attemptId: attemptIdNum,
+        passed,
+        feedback: feedback || null,
+        marks: marks || null,
+        gradedAt: new Date(),
+        gradedBy: adminId,
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating exam attempt:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 export const uploadCertificate = async (req: AdminRequest, res: Response): Promise<void> => {
   try {
     const { certificateUrl, attemptId } = req.body;
