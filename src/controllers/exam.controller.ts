@@ -32,7 +32,8 @@ import {
   getEntranceExamSchema,
   submitMcqSchema,
   submitAssignmentSchema,
-  submitFinalExamSchema
+  submitFinalExamSchema,
+  submitEntranceMcqSchema
 } from "../schemas/examSchema";
 
 import {
@@ -611,7 +612,7 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
   }
 
   try {
-    const { examId, responses } = submitMcqSchema.parse(req.body);
+    const { examId, responses, link } = submitEntranceMcqSchema.parse(req.body);
 
     const examResults = await db.select()
       .from(entranceExams)

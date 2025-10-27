@@ -18,6 +18,14 @@ export const submitMcqSchema = z.object({
     selectedOptionId: z.number()
   }))
 });
+export const submitEntranceMcqSchema = z.object({
+  examId: z.number(),
+  responses: z.array(z.object({
+    questionId: z.number(),
+    selectedOptionId: z.number()
+  })),
+  link: z.string().url('Please provide a valid URL')
+});
 
 export const submitAssignmentSchema = z.object({
   examId: z.number(),
