@@ -19,6 +19,7 @@ import {
 } from '../controllers/adminAction.controller';
 
 import { 
+  getEntranceExamAttemptsForReview,
   getExamAttemptsForReview,
   updateExamAttempt,
   uploadCertificate, 
@@ -40,6 +41,7 @@ router.post('/change-password', requireUserRole, changeAdminPassword);
 
 // // Admin-only routes (require 'admin' role)
 router.get('/exam-attempts', requireAdminRole, getExamAttemptsForReview);
+router.get('/entrance-exam-attempts', requireAdminRole, getEntranceExamAttemptsForReview);
 router.get('/users', requireAdminRole, getAllAdmins);
 router.get('/:adminId', requireAdminRole, getAdminDetails);
 router.patch('/role', requireAdminRole, updateAdminRole);
