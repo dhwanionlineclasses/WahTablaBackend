@@ -264,8 +264,6 @@ export const getEntranceExamAttemptsForReview = async (req: Request, res: Respon
 
         courseId: courses.courseId,
         courseName: courses.courseName,
-        yearId: years.yearId,
-        yearName: years.yearName,
 
         userId: users.userId,
         username: users.username,
@@ -274,9 +272,8 @@ export const getEntranceExamAttemptsForReview = async (req: Request, res: Respon
       })
       .from(entranceExamAttempts)
       .innerJoin(entranceExams, eq(entranceExamAttempts.entranceExamId, entranceExams.examId))
-      .innerJoin(courses, eq(exams.courseId, courses.courseId))
-      .innerJoin(years, eq(exams.yearId, years.yearId))
-      .innerJoin(users, eq(examAttempts.userId, users.userId))
+      .innerJoin(courses, eq(entranceExams.courseId, courses.courseId))
+      .innerJoin(users, eq(entranceExamAttempts.userId, users.userId))
       .leftJoin(userProfiles, eq(users.userId, userProfiles.userId))
       .where(and(...whereConditions))
       .orderBy(desc(entranceExamAttempts.submittedAt))
@@ -290,7 +287,7 @@ export const getEntranceExamAttemptsForReview = async (req: Request, res: Respon
           examId: attempt.examId,
           examTitle: attempt.examTitle,
           course: attempt.courseName,
-          year: attempt.yearName,
+          year: "N/A",
           attemptNumber: attempt.attemptNumber,
           dateTime: attempt.submittedAt,
           userId: attempt.userId,
