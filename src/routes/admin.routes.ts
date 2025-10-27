@@ -22,6 +22,7 @@ import {
   getEntranceExamAttemptsForReview,
   getExamAttemptsForReview,
   updateExamAttempt,
+  updateEntranceExamAttempt,
   uploadCertificate, 
 } from '../controllers/admin/examAttempts.controller';
 import { getUsersBasicDetails, getUserSpecificDetails } from '../controllers/admin/users.controller';
@@ -51,6 +52,7 @@ router.patch('/:adminId/toggle-status', requireAdminRole, toggleAdminStatus);
 
 // getting all examAttempted by students
 router.put('/exam-attempts', requireAdminRole, updateExamAttempt);
+router.put('/entrance-exam-attempts', requireAdminRole, updateEntranceExamAttempt);
 router.post('/exam-attempts/certificate', requireAdminRole, uploadCertificate);
 
 //get all user details
