@@ -1,7 +1,7 @@
 // controllers/admin/examAttempts.controller.ts
 import { Request, Response } from 'express';
 import db from '../../db/db_connect';
-import { examAttempts, exams, courses, years, users, userProfiles, assignmentSubmissions, assignmentQuestions, certificates, orders, videoAnalytics } from '../../models';
+import { examAttempts, entranceExamAttempts, entranceExams, exams, courses, years, users, userProfiles, assignmentSubmissions, assignmentQuestions, certificates, orders, videoAnalytics } from '../../models';
 import { videoAnalyticsSchema } from '../../schemas/videoAnalyticsSchema';
 import { eq, desc, and, isNull, ne } from 'drizzle-orm';
 import { AdminWithoutPassword } from '../../@types/admin.types';
@@ -192,6 +192,126 @@ export const getExamAttemptsForReview = async (req: Request, res: Response): Pro
       .select({ count: examAttempts.attemptId })
       .from(examAttempts)
       .innerJoin(exams, eq(examAttempts.examId, exams.examId))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+
+    res.status(200).json({
+      success: true,
+      data: detailedAttempts,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: totalCountResult.length,
+        totalPages: Math.ceil(totalCountResult.length / Number(limit))
+      },
+      message: 'Exam attempts retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error fetching exam attempts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+export const getEntranceExamAttemptsForReview = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      examType,
+      courseId,
+      yearId,
+      status = 'all',
+      page = 1,
+      limit = 1000
+    } = req.query;
+
+    const offset = (Number(page) - 1) * Number(limit);
+
+    const whereConditions = [];
+
+    if (courseId) {
+      const courseIdNum = Number(courseId);
+      if (isNaN(courseIdNum)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid course ID'
+        });
+        return;
+      }
+      whereConditions.push(eq(entranceExams.courseId, courseIdNum));
+    }
+
+    if (status === 'pending') {
+      whereConditions.push(isNull(entranceExamAttempts.gradedAt));
+    } else if (status === 'graded') {
+      whereConditions.push(isNull(entranceExamAttempts.gradedAt));
+    }
+
+    const examAttemptsData = await db
+      .select({
+        attemptId: entranceExamAttempts.attemptId,
+        attemptNumber: entranceExamAttempts.attemptNumber,
+        passed: entranceExamAttempts.passed,
+        submittedAt: entranceExamAttempts.submittedAt,
+        gradedAt: entranceExamAttempts.gradedAt,
+        gradedBy: entranceExamAttempts.gradedBy,
+        videoUrl: entranceExamAttempts.videoUrl,
+
+        examId: entranceExams.examId,
+        examTitle: entranceExams.title,
+        totalMarks: entranceExams.totalMarks,
+
+        courseId: courses.courseId,
+        courseName: courses.courseName,
+        yearId: years.yearId,
+        yearName: years.yearName,
+
+        userId: users.userId,
+        username: users.username,
+        email: users.email,
+        fullName: userProfiles.fullName,
+      })
+      .from(entranceExamAttempts)
+      .innerJoin(entranceExams, eq(entranceExamAttempts.entranceExamId, entranceExams.examId))
+      .innerJoin(courses, eq(exams.courseId, courses.courseId))
+      .innerJoin(years, eq(exams.yearId, years.yearId))
+      .innerJoin(users, eq(examAttempts.userId, users.userId))
+      .leftJoin(userProfiles, eq(users.userId, userProfiles.userId))
+      .where(and(...whereConditions))
+      .orderBy(desc(entranceExamAttempts.submittedAt))
+      .limit(Number(limit))
+      .offset(offset);
+
+    const detailedAttempts = await Promise.all(
+      examAttemptsData.map(async (attempt) => {
+        const baseAttempt = {
+          attemptId: attempt.attemptId,
+          examId: attempt.examId,
+          examTitle: attempt.examTitle,
+          course: attempt.courseName,
+          year: attempt.yearName,
+          attemptNumber: attempt.attemptNumber,
+          dateTime: attempt.submittedAt,
+          userId: attempt.userId,
+          username: attempt.username,
+          fullName: attempt.fullName || 'N/A',
+          email: attempt.email,
+          status: attempt.passed === null ? 'pending' : (attempt.passed ? 'passed' : 'failed'),
+          gradedAt: attempt.gradedAt,
+          gradedBy: attempt.gradedBy,
+          totalMarks: attempt.totalMarks,
+          videoUrl: attempt.videoUrl
+        }
+
+        return baseAttempt;
+      })
+    );
+
+    const totalCountResult = await db
+      .select({ count: entranceExamAttempts.attemptId })
+      .from(entranceExamAttempts)
+      .innerJoin(entranceExams, eq(entranceExamAttempts.entranceExamId, entranceExams.examId))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
 
     res.status(200).json({
