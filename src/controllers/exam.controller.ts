@@ -2,14 +2,14 @@
 import { Request, Response, NextFunction } from "express";
 import z from "zod";
 import db from "../db/db_connect";
-import { eq, and, gte, lt } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import ApiError from "../utils/ApiError";
 import ApiResponse from "../utils/ApiResponse";
 import asyncHandler from "../utils/asyncHandler";
 import { UserWithoutPassword } from "../@types/types";
 import { resolveMultipleOrderItems } from '../utils/orderHelpers';
 import { videoAnalyticsSchema } from "../schemas/videoAnalyticsSchema";
-import { videoAnalytics, VideoAnalytics, NewVideoAnalytics } from "../models/videoAnalytics.model";
+import { videoAnalytics, VideoAnalytics } from "../models/videoAnalytics.model";
 
 
 import {

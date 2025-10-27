@@ -10,6 +10,7 @@
     "postinstall": "drizzle-kit generate",
     "sync": "ts-node src/scripts/vimeoPollingService.ts",
     "sync:exam": "ts-node src/scripts/syncExams.ts",
+    "sync:entance-exam": "npx ts-node src/scripts/syncExams.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
