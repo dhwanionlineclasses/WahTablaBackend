@@ -257,6 +257,7 @@ export const getEntranceExamAttemptsForReview = async (req: Request, res: Respon
         gradedAt: entranceExamAttempts.gradedAt,
         gradedBy: entranceExamAttempts.gradedBy,
         videoUrl: entranceExamAttempts.videoUrl,
+        mcqPassed: entranceExamAttempts.mcqPassed,
 
         examId: entranceExams.examId,
         examTitle: entranceExams.title,
@@ -298,7 +299,8 @@ export const getEntranceExamAttemptsForReview = async (req: Request, res: Respon
           gradedAt: attempt.gradedAt,
           gradedBy: attempt.gradedBy,
           totalMarks: attempt.totalMarks,
-          videoUrl: attempt.videoUrl
+          videoUrl: attempt.videoUrl,
+          mcqPassed: attempt.mcqPassed,
         }
 
         return baseAttempt;
@@ -961,6 +963,7 @@ export const updateExamAttempt = async (req: AdminRequest, res: Response): Promi
 export const updateEntranceExamAttempt = async (req: AdminRequest, res: Response): Promise<void> => {
   try {
     const { passed, feedback, marks, attemptId } = req.body;
+    console.log({ passed })
 
     if (typeof passed !== 'boolean') {
       res.status(400).json({
@@ -995,9 +998,10 @@ export const updateEntranceExamAttempt = async (req: AdminRequest, res: Response
         userId: entranceExamAttempts.userId,
         passed: entranceExamAttempts.passed,
         gradedAt: entranceExamAttempts.gradedAt,
+        mcqPassed: entranceExamAttempts.mcqPassed
       })
       .from(entranceExamAttempts)
-      .innerJoin(exams, eq(entranceExamAttempts.entranceExamId, entranceExams.examId))
+      .innerJoin(entranceExams, eq(entranceExamAttempts.entranceExamId, entranceExams.examId))
       .where(eq(entranceExamAttempts.attemptId, attemptIdNum))
       .limit(1);
 
@@ -1032,6 +1036,22 @@ export const updateEntranceExamAttempt = async (req: AdminRequest, res: Response
         })
         .where(eq(entranceExamAttempts.attemptId, attemptIdNum));
     });
+
+    if (passed && attempt.mcqPassed) {
+      if (exam[0].title.toLowerCase().includes('bibhusan')) {
+        await db.update(users)
+          .set({
+            bibhusanActive: true
+          })
+          .where(eq(users.userId, userId));
+      } else if (exam[0].title.toLowerCase().includes('ratna')) {
+        await db.update(users)
+          .set({
+            ratnaActive: true
+          })
+          .where(eq(users.userId, userId));
+      }
+    }
 
     res.status(200).json({
       success: true,

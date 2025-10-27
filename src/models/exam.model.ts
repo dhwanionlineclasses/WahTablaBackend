@@ -5,7 +5,7 @@ import { courses } from './course.model';
 import { users } from './user.model';
 import { admins } from './admin.model';
 import { mcqQuestions, mcqResponses } from './mcq.model';
-import { entranceMcqQuestions } from './entrance.mcq.model';
+import { entranceMcqOptions, entranceMcqQuestions, entranceMcqResponses } from './entrance.mcq.model';
 import { assignmentSubmissions } from './assignment.model';
 import { assignmentQuestions } from './assignmentQuestion.model';
 import { finalExamSections } from './finalExam.model';
@@ -58,7 +58,7 @@ export const entranceExamsRelations = relations(entranceExams, ({ one, many }) =
     fields: [entranceExams.courseId],
     references: [courses.courseId],
   }),
-  attempts: many(examAttempts),
+  attempts: many(entranceExamAttempts),
   mcqQuestions: many(entranceMcqQuestions),
 }));
 
@@ -123,7 +123,7 @@ export const entranceExamAttemptsRelations = relations(entranceExamAttempts, ({ 
     fields: [entranceExamAttempts.gradedBy],
     references: [admins.adminId],
   }),
-  mcqResponses: many(mcqResponses),
+  mcqResponses: many(entranceMcqResponses),
   assignmentSubmission: one(assignmentSubmissions, {
     fields: [entranceExamAttempts.attemptId],
     references: [assignmentSubmissions.attemptId],
