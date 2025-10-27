@@ -17,6 +17,7 @@ import {
   mcqQuestions,
   mcqOptions,
   examAttempts,
+  entranceExamAttempts,
   assignmentSubmissions,
   courses,
   years,
@@ -640,10 +641,10 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
     const unansweredQuestions = totalQuestionsInDB - responses.length;
 
     const existingAttempt = await db.select()
-      .from(examAttempts)
+      .from(entranceExamAttempts)
       .where(and(
-        eq(examAttempts.userId, userId),
-        eq(examAttempts.entranceExamId, examId)
+        eq(entranceExamAttempts.userId, userId),
+        eq(entranceExamAttempts.entranceExamId, examId)
       ))
       .limit(1);
 
@@ -665,7 +666,7 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
 
       currentAttemptNumber = isToday ? existingAttempt[0].attemptNumber + 1 : 1;
 
-      const [updatedAttempt] = await db.update(examAttempts)
+      const [updatedAttempt] = await db.update(entranceExamAttempts)
         .set({
           attemptNumber: currentAttemptNumber,
           submittedAt: new Date(),
@@ -680,12 +681,13 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
     } else {
       currentAttemptNumber = 1;
 
-      const [newAttempt] = await db.insert(examAttempts)
+      const [newAttempt] = await db.insert(entranceExamAttempts)
         .values({
-          examId,
+          entranceExamId: examId,
           userId,
           attemptNumber: currentAttemptNumber,
-          submittedAt: new Date()
+          submittedAt: new Date(),
+          videoUrl: link
         })
         .returning();
 
@@ -742,21 +744,21 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
       }
     }
 
-    if (!passed) {
-      if ('bibhusan'.includes(examResults[0].title.toLowerCase())) {
-        await db.update(users)
-        .set({
-          bibhusanActive: true
-        })
-        .where(eq(users.userId, userId));
-      } else if ('ratna'.includes(examResults[0].title.toLowerCase())) {
-        await db.update(users)
-          .set({
-            ratnaActive: true
-          })
-          .where(eq(users.userId, userId));
-      }
-    }
+    // if (!passed) {
+    //   if ('bibhusan'.includes(examResults[0].title.toLowerCase())) {
+    //     await db.update(users)
+    //     .set({
+    //       bibhusanActive: true
+    //     })
+    //     .where(eq(users.userId, userId));
+    //   } else if ('ratna'.includes(examResults[0].title.toLowerCase())) {
+    //     await db.update(users)
+    //       .set({
+    //         ratnaActive: true
+    //       })
+    //       .where(eq(users.userId, userId));
+    //   }
+    // }
 
     res.status(200).json(
       new ApiResponse(200, {
