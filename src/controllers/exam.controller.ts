@@ -674,7 +674,7 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
           gradedAt: null,
           gradedBy: null
         })
-        .where(eq(examAttempts.attemptId, existingAttempt[0].attemptId))
+        .where(eq(entranceExamAttempts.attemptId, existingAttempt[0].attemptId))
         .returning();
 
       attempt = updatedAttempt;
@@ -724,12 +724,12 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
     const percentage = Math.round((correctAnswers / totalQuestionsInDB) * 100);
     const passed = percentage >= 50;
 
-    await db.update(examAttempts)
+    await db.update(entranceExamAttempts)
       .set({
-        passed,
+        mcqPassed: passed,
         gradedAt: new Date()
       })
-      .where(eq(examAttempts.attemptId, attempt.attemptId));
+      .where(eq(entranceExamAttempts.attemptId, attempt.attemptId));
 
     const remainingAttempts = passed ? 0 : Math.max(0, 3 - currentAttemptNumber);
 
