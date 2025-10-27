@@ -101,6 +101,7 @@ export const entranceExamAttempts = pgTable('entrance_exam_attempts', {
   userId: integer('user_id').references(() => users.userId).notNull(),
   attemptNumber: integer('attempt_number').default(0).notNull(),
   passed: boolean('passed').default(false),
+  mcqPassed: boolean('mcq_passed').default(false),
   submittedAt: timestamp('submitted_at').defaultNow(),
   gradedAt: timestamp('graded_at'),
   gradedBy: integer('graded_by').references(() => admins.adminId),
