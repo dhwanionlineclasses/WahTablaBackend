@@ -72,6 +72,7 @@ export const examAttempts = pgTable('exam_attempts', {
   gradedAt: timestamp('graded_at'),
   gradedBy: integer('graded_by').references(() => admins.adminId),
   entranceExamId: integer('entrance_exam_id').references(() => entranceExams.examId),
+  videoUrl: varchar('video_url', { length: 255 }),
 }, (table) => ({
   uniqueUserExam: unique().on(table.examId, table.userId)
 }));
