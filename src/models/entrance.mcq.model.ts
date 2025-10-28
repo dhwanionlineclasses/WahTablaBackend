@@ -2,7 +2,7 @@
 import { pgTable, serial, integer, varchar, boolean, timestamp, text } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { exams, examAttempts, entranceExams } from './exam.model';
+import { exams, entranceExamAttempts, entranceExams } from './exam.model';
 
 export const entranceMcqQuestions = pgTable('entrance_mcq_questions', {
   questionId: serial('question_id').primaryKey(),
@@ -23,7 +23,7 @@ export const entranceMcqOptions = pgTable('entrance_mcq_options', {
 
 export const entranceMcqResponses = pgTable('entrance_mcq_responses', {
   responseId: serial('response_id').primaryKey(),
-  attemptId: integer('attempt_id').references(() => examAttempts.attemptId).notNull(),
+  attemptId: integer('attempt_id').references(() => entranceExamAttempts.attemptId).notNull(),
   questionId: integer('question_id').references(() => entranceMcqQuestions.questionId).notNull(),
   selectedOptionId: integer('selected_option_id').references(() => entranceMcqOptions.optionId),
   submittedAt: timestamp('submitted_at').defaultNow()
@@ -47,9 +47,9 @@ export const entranceMcqOptionsRelations = relations(entranceMcqOptions, ({ one,
 }));
 
 export const entranceMcqResponsesRelations = relations(entranceMcqResponses, ({ one }) => ({
-  attempt: one(examAttempts, {
+  attempt: one(entranceExamAttempts, {
     fields: [entranceMcqResponses.attemptId],
-    references: [examAttempts.attemptId],
+    references: [entranceExamAttempts.attemptId],
   }),
   question: one(entranceMcqQuestions, {
     fields: [entranceMcqResponses.questionId],

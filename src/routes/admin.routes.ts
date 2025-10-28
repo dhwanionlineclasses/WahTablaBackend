@@ -19,8 +19,10 @@ import {
 } from '../controllers/adminAction.controller';
 
 import { 
+  getEntranceExamAttemptsForReview,
   getExamAttemptsForReview,
   updateExamAttempt,
+  updateEntranceExamAttempt,
   uploadCertificate, 
 } from '../controllers/admin/examAttempts.controller';
 import { getUsersBasicDetails, getUserSpecificDetails } from '../controllers/admin/users.controller';
@@ -40,6 +42,7 @@ router.post('/change-password', requireUserRole, changeAdminPassword);
 
 // // Admin-only routes (require 'admin' role)
 router.get('/exam-attempts', requireAdminRole, getExamAttemptsForReview);
+router.get('/entrance-exam-attempts', requireAdminRole, getEntranceExamAttemptsForReview);
 router.get('/users', requireAdminRole, getAllAdmins);
 router.get('/:adminId', requireAdminRole, getAdminDetails);
 router.patch('/role', requireAdminRole, updateAdminRole);
@@ -49,6 +52,7 @@ router.patch('/:adminId/toggle-status', requireAdminRole, toggleAdminStatus);
 
 // getting all examAttempted by students
 router.put('/exam-attempts', requireAdminRole, updateExamAttempt);
+router.put('/entrance-exam-attempts', requireAdminRole, updateEntranceExamAttempt);
 router.post('/exam-attempts/certificate', requireAdminRole, uploadCertificate);
 
 //get all user details

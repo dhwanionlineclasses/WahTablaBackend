@@ -5,7 +5,7 @@ import { courses } from './course.model';
 import { users } from './user.model';
 import { admins } from './admin.model';
 import { mcqQuestions, mcqResponses } from './mcq.model';
-import { entranceMcqQuestions } from './entrance.mcq.model';
+import { entranceMcqOptions, entranceMcqQuestions, entranceMcqResponses } from './entrance.mcq.model';
 import { assignmentSubmissions } from './assignment.model';
 import { assignmentQuestions } from './assignmentQuestion.model';
 import { finalExamSections } from './finalExam.model';
@@ -58,7 +58,7 @@ export const entranceExamsRelations = relations(entranceExams, ({ one, many }) =
     fields: [entranceExams.courseId],
     references: [courses.courseId],
   }),
-  attempts: many(examAttempts),
+  attempts: many(entranceExamAttempts),
   mcqQuestions: many(entranceMcqQuestions),
 }));
 
@@ -71,7 +71,6 @@ export const examAttempts = pgTable('exam_attempts', {
   submittedAt: timestamp('submitted_at').defaultNow(),
   gradedAt: timestamp('graded_at'),
   gradedBy: integer('graded_by').references(() => admins.adminId),
-  entranceExamId: integer('entrance_exam_id').references(() => entranceExams.examId),
 }, (table) => ({
   uniqueUserExam: unique().on(table.examId, table.userId)
 }));
@@ -80,10 +79,6 @@ export const examAttemptsRelations = relations(examAttempts, ({ one, many }) => 
   exam: one(exams, {
     fields: [examAttempts.examId],
     references: [exams.examId],
-  }),
-  entranceExam: one(entranceExams, {
-    fields: [examAttempts.entranceExamId],
-    references: [entranceExams.examId],
   }),
   user: one(users, {
     fields: [examAttempts.userId],
@@ -100,16 +95,53 @@ export const examAttemptsRelations = relations(examAttempts, ({ one, many }) => 
   })
 }));
 
+export const entranceExamAttempts = pgTable('entrance_exam_attempts', {
+  attemptId: serial('attempt_id').primaryKey(),
+  entranceExamId: integer('entrance_exam_id').references(() => entranceExams.examId).notNull(),
+  userId: integer('user_id').references(() => users.userId).notNull(),
+  attemptNumber: integer('attempt_number').default(0).notNull(),
+  passed: boolean('passed').default(false),
+  mcqPassed: boolean('mcq_passed').default(false),
+  submittedAt: timestamp('submitted_at').defaultNow(),
+  gradedAt: timestamp('graded_at'),
+  gradedBy: integer('graded_by').references(() => admins.adminId),
+  videoUrl: varchar('video_url', { length: 255 }),
+}, (table) => ({
+  uniqueUserExam: unique().on(table.entranceExamId, table.userId)
+}));
+
+export const entranceExamAttemptsRelations = relations(entranceExamAttempts, ({ one, many }) => ({
+  entranceExam: one(entranceExams, {
+    fields: [entranceExamAttempts.entranceExamId],
+    references: [entranceExams.examId],
+  }),
+  user: one(users, {
+    fields: [entranceExamAttempts.userId],
+    references: [users.userId],
+  }),
+  gradedByAdmin: one(admins, {
+    fields: [entranceExamAttempts.gradedBy],
+    references: [admins.adminId],
+  }),
+  mcqResponses: many(entranceMcqResponses),
+  assignmentSubmission: one(assignmentSubmissions, {
+    fields: [entranceExamAttempts.attemptId],
+    references: [assignmentSubmissions.attemptId],
+  })
+}));
+
 export type Exam = typeof exams.$inferSelect;
 export type NewExam = typeof exams.$inferInsert;
 export type EntranceExam = typeof entranceExams.$inferSelect;
 export type NewEntranceExam = typeof entranceExams.$inferInsert;
 export type ExamAttempt = typeof examAttempts.$inferSelect;
-export type NewExamAttempt = typeof examAttempts.$inferInsert;
+export type EntranceExamAttempt = typeof entranceExamAttempts.$inferSelect;
+export type NewEntranceExamAttempt = typeof entranceExamAttempts.$inferInsert;
 
 export const examSchema = createInsertSchema(exams);
 export const examSchemaSelect = createSelectSchema(exams);
 export const entranceExamSchema = createInsertSchema(entranceExams);
 export const entranceExamSchemaSelect = createSelectSchema(entranceExams);
 export const examAttemptSchema = createInsertSchema(examAttempts);
-export const examAttemptSchemaSelect = createSelectSchema(examAttempts);
+export const entranceExamAttemptSchema = createInsertSchema(entranceExamAttempts);
+export const entranceExamAttemptSchemaSelect = createSelectSchema(entranceExamAttempts);

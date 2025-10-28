@@ -17,6 +17,7 @@ import {
   mcqQuestions,
   mcqOptions,
   examAttempts,
+  entranceExamAttempts,
   assignmentSubmissions,
   courses,
   years,
@@ -32,7 +33,8 @@ import {
   getEntranceExamSchema,
   submitMcqSchema,
   submitAssignmentSchema,
-  submitFinalExamSchema
+  submitFinalExamSchema,
+  submitEntranceMcqSchema
 } from "../schemas/examSchema";
 
 import {
@@ -611,7 +613,7 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
   }
 
   try {
-    const { examId, responses } = submitMcqSchema.parse(req.body);
+    const { examId, responses, link } = submitEntranceMcqSchema.parse(req.body);
 
     const examResults = await db.select()
       .from(entranceExams)
@@ -639,10 +641,10 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
     const unansweredQuestions = totalQuestionsInDB - responses.length;
 
     const existingAttempt = await db.select()
-      .from(examAttempts)
+      .from(entranceExamAttempts)
       .where(and(
-        eq(examAttempts.userId, userId),
-        eq(examAttempts.entranceExamId, examId)
+        eq(entranceExamAttempts.userId, userId),
+        eq(entranceExamAttempts.entranceExamId, examId)
       ))
       .limit(1);
 
@@ -664,7 +666,7 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
 
       currentAttemptNumber = isToday ? existingAttempt[0].attemptNumber + 1 : 1;
 
-      const [updatedAttempt] = await db.update(examAttempts)
+      const [updatedAttempt] = await db.update(entranceExamAttempts)
         .set({
           attemptNumber: currentAttemptNumber,
           submittedAt: new Date(),
@@ -672,19 +674,20 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
           gradedAt: null,
           gradedBy: null
         })
-        .where(eq(examAttempts.attemptId, existingAttempt[0].attemptId))
+        .where(eq(entranceExamAttempts.attemptId, existingAttempt[0].attemptId))
         .returning();
 
       attempt = updatedAttempt;
     } else {
       currentAttemptNumber = 1;
 
-      const [newAttempt] = await db.insert(examAttempts)
+      const [newAttempt] = await db.insert(entranceExamAttempts)
         .values({
-          examId,
+          entranceExamId: examId,
           userId,
           attemptNumber: currentAttemptNumber,
-          submittedAt: new Date()
+          submittedAt: new Date(),
+          videoUrl: link
         })
         .returning();
 
@@ -721,12 +724,12 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
     const percentage = Math.round((correctAnswers / totalQuestionsInDB) * 100);
     const passed = percentage >= 50;
 
-    await db.update(examAttempts)
+    await db.update(entranceExamAttempts)
       .set({
-        passed,
+        mcqPassed: passed,
         gradedAt: new Date()
       })
-      .where(eq(examAttempts.attemptId, attempt.attemptId));
+      .where(eq(entranceExamAttempts.attemptId, attempt.attemptId));
 
     const remainingAttempts = passed ? 0 : Math.max(0, 3 - currentAttemptNumber);
 
@@ -741,21 +744,21 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
       }
     }
 
-    if (!passed) {
-      if ('bibhusan'.includes(examResults[0].title.toLowerCase())) {
-        await db.update(users)
-        .set({
-          bibhusanActive: true
-        })
-        .where(eq(users.userId, userId));
-      } else if ('ratna'.includes(examResults[0].title.toLowerCase())) {
-        await db.update(users)
-          .set({
-            ratnaActive: true
-          })
-          .where(eq(users.userId, userId));
-      }
-    }
+    // if (!passed) {
+    //   if ('bibhusan'.includes(examResults[0].title.toLowerCase())) {
+    //     await db.update(users)
+    //     .set({
+    //       bibhusanActive: true
+    //     })
+    //     .where(eq(users.userId, userId));
+    //   } else if ('ratna'.includes(examResults[0].title.toLowerCase())) {
+    //     await db.update(users)
+    //       .set({
+    //         ratnaActive: true
+    //       })
+    //       .where(eq(users.userId, userId));
+    //   }
+    // }
 
     res.status(200).json(
       new ApiResponse(200, {
