@@ -727,7 +727,6 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
     await db.update(entranceExamAttempts)
       .set({
         mcqPassed: passed,
-        gradedAt: new Date()
       })
       .where(eq(entranceExamAttempts.attemptId, attempt.attemptId));
 
