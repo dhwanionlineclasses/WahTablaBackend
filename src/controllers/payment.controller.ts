@@ -6,117 +6,117 @@ import { eq } from "drizzle-orm";
 import { resend } from "../lib/resend";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-12-18.acacia'
+  apiVersion: '2024-12-18.acacia'
 });
 
 const SUCCESS_URL = `${process.env.NEXT_BASE_URL!}/profile`
 const CANCEL_URL = `${process.env.NEXT_BASE_URL!}/buy-course`
 
 const createCheckoutSession = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { /* The above code appears to be a comment section in a TypeScript file. It includes the
+  try {
+    const { /* The above code appears to be a comment section in a TypeScript file. It includes the
         variable `courseName` and a multi-line comment delimiter ` */
-            courseName, metadata, amount } = req.body;
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card', 'cashapp'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'usd',
-                        product_data: {
-                            name: courseName,
-                            metadata: metadata,
-                        },
-                        unit_amount: amount, // price in cents
-                    },
-                    quantity: 1
-                },
-            ],
-            mode: 'payment',
-            invoice_creation: {
-                enabled: true,
+      courseName, metadata, amount } = req.body;
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card', 'cashapp'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: courseName,
+              metadata: metadata,
             },
-            success_url: SUCCESS_URL,
-            cancel_url: CANCEL_URL,
-            metadata: metadata,
-        })
-        res.status(200).json({ url: session.url })
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ error: 'Internal server error' })
-    }
+            unit_amount: amount, // price in cents
+          },
+          quantity: 1
+        },
+      ],
+      mode: 'payment',
+      invoice_creation: {
+        enabled: true,
+      },
+      success_url: SUCCESS_URL,
+      cancel_url: CANCEL_URL,
+      metadata: metadata,
+    })
+    res.status(200).json({ url: session.url })
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }
 
 const handleStripeWebhook = async (req: Request, res: Response) => {
 
-    const signature = req.headers["stripe-signature"]!;
-    const stripePayload = (req as any).rawBody || req.body;
-    try {
-        const event = stripe.webhooks.constructEvent(
-            stripePayload,
-            signature,
-            process.env.STRIPE_WEBHOOK_SECRET!
-        );
-        const eventTimestamp = new Date(event.created * 1000);
-        console.log(`Event received at: ${eventTimestamp.toLocaleDateString()} ${eventTimestamp.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        })}`);
+  const signature = req.headers["stripe-signature"]!;
+  const stripePayload = (req as any).rawBody || req.body;
+  try {
+    const event = stripe.webhooks.constructEvent(
+      stripePayload,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
+    const eventTimestamp = new Date(event.created * 1000);
+    console.log(`Event received at: ${eventTimestamp.toLocaleDateString()} ${eventTimestamp.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })}`);
 
-        switch (event.type) {
-            case 'checkout.session.completed': {
-                const session = event.data.object as Stripe.Checkout.Session;
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
 
-                const totalAmount = session.amount_total! / 100;
-                const metadata = session.metadata;
+        const totalAmount = session.amount_total! / 100;
+        const metadata = session.metadata;
 
-                if (!metadata) throw new Error('Metadata is required');
+        if (!metadata) throw new Error('Metadata is required');
 
-                const emailId = metadata.email;
-                if (!emailId) throw new Error('Email is required');
+        const emailId = metadata.email;
+        if (!emailId) throw new Error('Email is required');
 
-                const itemName = metadata.plan === 'Full Course' ? metadata.course : metadata.plan;
+        const itemName = metadata.plan === 'Full Course' ? metadata.course : metadata.plan;
 
-                const user = await db
-                    .select()
-                    .from(users)
-                    .where(eq(users.email, emailId))
-                    .limit(1);
+        const user = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, emailId))
+          .limit(1);
 
-                if (!user.length) throw new Error('User not found');
+        if (!user.length) throw new Error('User not found');
 
-                const userId = user[0].userId;
-                const username = user[0].username;
+        const userId = user[0].userId;
+        const username = user[0].username;
 
-                const paymentIntent = session.payment_intent as string;
+        const paymentIntent = session.payment_intent as string;
 
-                // Insert order into the database
-                const [order] = await db.insert(orders).values({
-                    userId,
-                    orderDate: new Date(),
-                    totalAmount: totalAmount.toFixed(2),
-                    paymentStatus: 'succeeded',
-                    paymentIntent,
-                }).returning();
+        // Insert order into the database
+        const [order] = await db.insert(orders).values({
+          userId,
+          orderDate: new Date(),
+          totalAmount: totalAmount.toFixed(2),
+          paymentStatus: 'succeeded',
+          paymentIntent,
+        }).returning();
 
-                // Insert order item
-                const orderItem = await db.insert(orderItems).values({
-                    orderId: order.orderId,
-                    itemType: metadata.type,
-                    itemName: itemName,
-                });
+        // Insert order item
+        const orderItem = await db.insert(orderItems).values({
+          orderId: order.orderId,
+          itemType: metadata.type,
+          itemName: itemName,
+        });
 
-                await db.update(users).set({ purchasePlan: metadata.type }).where(eq(users.userId, userId));
+        await db.update(users).set({ purchasePlan: metadata.type }).where(eq(users.userId, userId));
 
-                console.log('✅ Order created successfully:', order);
-                console.log('✅ Order Item created successfully:', orderItem);
+        console.log('✅ Order created successfully:', order);
+        console.log('✅ Order Item created successfully:', orderItem);
 
-                await resend.emails.send({
-                    from: 'onboarding@resend.dev', // your verified sender domain
-                    to: emailId,
-                    subject: `🎶 Payment Successful — Your ${itemName} is Ready!`,
-                    html: `
+        const { data, error } = await resend.emails.send({
+          from: 'hello@sidahq.com', // your verified sender domain
+          to: emailId,
+          subject: `🎶 Payment Successful — Your ${itemName} is Ready!`,
+          html: `
       <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: hsl(240,10%,3.9%); padding: 30px; color: hsl(0,0%,98%);">
         <div style="max-width: 600px; margin:auto; background: hsl(240,10%,3.9%); border-radius: 12px; border: 1px solid hsl(0,0%,20%); overflow: hidden;">
 
@@ -170,43 +170,48 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
         </div>
       </div>
     `
-                });
+        });
 
-                console.log('📧 Confirmation email sent successfully to:', emailId);
-                break;
-            }
-
-            case "charge.failed":
-                const charge = event.data.object as Stripe.Charge;
-
-                // Insert failed payment into the database
-                await db.insert(orders).values({
-                    userId: parseInt(charge.metadata.userId, 10), // 
-                    orderDate: new Date(),
-                    totalAmount: charge.amount.toFixed(2),
-                    paymentStatus: 'failed',
-                    paymentIntent: charge.payment_intent as string,
-                });
-
-                console.log("Charge Failed:", event.data.object);
-                break;
-
-            case "charge.succeeded":
-                console.log("Charge Succeeded:", event.data.object);
-                break;
-
-            default:
-                console.log("Unhandled event type:", event.type);
-                break;
+        if (error) {
+          console.error('Error sending email:', error);
+        } else {
+          console.log('📧 Confirmation email sent successfully to:', emailId);
         }
 
-        console.log("Webhook event received:", event);
-        res.status(200).json({ received: true });
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ error: 'Internal server error' })
+        break;
+      }
 
+      case "charge.failed":
+        const charge = event.data.object as Stripe.Charge;
+
+        // Insert failed payment into the database
+        await db.insert(orders).values({
+          userId: parseInt(charge.metadata.userId, 10), // 
+          orderDate: new Date(),
+          totalAmount: charge.amount.toFixed(2),
+          paymentStatus: 'failed',
+          paymentIntent: charge.payment_intent as string,
+        });
+
+        console.log("Charge Failed:", event.data.object);
+        break;
+
+      case "charge.succeeded":
+        console.log("Charge Succeeded:", event.data.object);
+        break;
+
+      default:
+        console.log("Unhandled event type:", event.type);
+        break;
     }
+
+    console.log("Webhook event received:", event);
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ error: 'Internal server error' })
+
+  }
 }
 
 

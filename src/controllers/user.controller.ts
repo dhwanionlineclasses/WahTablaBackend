@@ -80,17 +80,19 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     // Exclude sensitive fields from the response user object
     const { password: _, ...userWithoutPassword } = savedUser;
 
-    await resend.emails.send({
-      from: 'onboarding@resend.dev', // or your verified domain
+    const { data, error } = await resend.emails.send({
+      from: 'hello@sidahq.com', // or your verified domain
       to: validatedData.email,
-      subject: 'Welcome to Wahtabla – Begin Your Musical Journey Today!',
+      subject: 'Welcome to Wah Tabla – Begin Your Musical Journey Today!',
       html: `
     <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: hsl(240, 10%, 3.9%); padding: 30px; color: hsl(0, 0%, 98%);">
       <div style="max-width: 600px; margin: auto; background: hsl(240, 10%, 3.9%); border-radius: 12px; overflow: hidden; border: 1px solid hsl(0, 0%, 20%);">
 
         <!-- Logo -->
         <div style="text-align: center; padding: 30px 20px; border-bottom: 1px solid hsl(0, 0%, 15%);">
-          <img src="https://wahtabla.com/icons/logo.svg" alt="Wahtabla Logo" width="120" style="display:block; margin:auto;"/>
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            <strong>Wah Tabla</strong>
+          </p>
         </div>
 
         <!-- Greeting -->
@@ -124,7 +126,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
             We look forward to being part of your musical journey!<br/>
             Welcome aboard,<br/>
-            <strong>Team Wahtabla</strong>
+            <strong>Team Wah Tabla</strong>
           </p>
 
           <div style="text-align: center; margin-top: 30px;">
@@ -147,8 +149,8 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   `
     });
 
-    await resend.emails.send({
-      from: 'onboarding@resend.dev', // your verified sender
+    const { data: data2, error: error2 } = await resend.emails.send({
+      from: 'hello@sidahq.com', // your verified sender
       to: 'wahhtabla@gmail.com', // or your admin email
       subject: '🔔 New User Registration — Wah Tabla',
       html: `
@@ -193,6 +195,10 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     </div>
   `
     });
+
+    if (error || error2) {
+      console.log("Email not sent", error, error2);
+    }
 
     res
       .status(201)
@@ -537,8 +543,8 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
 
     const resetLink = `https://wahtabla.com/reset-password?token=${token}`;
 
-    await resend.emails.send({
-      from: 'onboarding@resend.dev', // or your verified domain
+    const { data, error } = await resend.emails.send({
+      from: 'hello@sidahq.com', // or your verified domain
       to: user[0].email,
       subject: 'Reset Your Wahtabla Password',
       html: `
@@ -547,7 +553,7 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
 
       <!-- Logo -->
       <div style="text-align: center; padding: 30px 20px; border-bottom: 1px solid hsl(0, 0%, 15%);">
-        <img src="https://wahtabla.com/icons/logo.svg" alt="Wahtabla Logo" width="120" style="display:block; margin:auto;"/>
+          <h2 style="margin: 0;">Wah Tabla</h2>
       </div>
 
       <!-- Greeting -->
@@ -593,6 +599,10 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   </div>
   `
     });
+
+    if (error) {
+      throw new ApiError(500, "Failed to send password reset email");
+    }
 
     res.status(200).json(
       new ApiResponse(

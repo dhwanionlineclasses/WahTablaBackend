@@ -10,6 +10,7 @@ import { UserWithoutPassword } from "../@types/types";
 import { resolveMultipleOrderItems } from '../utils/orderHelpers';
 import { videoAnalyticsSchema } from "../schemas/videoAnalyticsSchema";
 import { videoAnalytics, VideoAnalytics } from "../models/videoAnalytics.model";
+import { resend } from "../lib/resend";
 
 
 import {
@@ -25,7 +26,6 @@ import {
   entranceExams,
   entranceMcqQuestions,
   entranceMcqOptions,
-  users
 } from "../models";
 
 import {
@@ -651,7 +651,9 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
     let attempt;
     let currentAttemptNumber;
 
-    if (existingAttempt.length > 0) {
+    if (existingAttempt.length > 2) {
+      throw new ApiError(500, "You have reached the attempt limit. Please enroll in offline classes");
+    } else if (existingAttempt.length > 0) {
       if (existingAttempt[0].passed) {
         throw new ApiError(400, 'You have already passed this MCQ exam');
       }
@@ -659,10 +661,6 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
       const today = new Date();
       const lastAttemptDate = new Date(existingAttempt[0].submittedAt!);
       const isToday = today.toDateString() === lastAttemptDate.toDateString();
-
-      // if (isToday && existingAttempt[0].attemptNumber >= 3) {
-      //   throw new ApiError(429, `You have reached the daily limit of 3 attempts for this MCQ exam. You can try again tomorrow.`);
-      // }
 
       currentAttemptNumber = isToday ? existingAttempt[0].attemptNumber + 1 : 1;
 
@@ -743,21 +741,71 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
       }
     }
 
-    // if (!passed) {
-    //   if ('bibhusan'.includes(examResults[0].title.toLowerCase())) {
-    //     await db.update(users)
-    //     .set({
-    //       bibhusanActive: true
-    //     })
-    //     .where(eq(users.userId, userId));
-    //   } else if ('ratna'.includes(examResults[0].title.toLowerCase())) {
-    //     await db.update(users)
-    //       .set({
-    //         ratnaActive: true
-    //       })
-    //       .where(eq(users.userId, userId));
-    //   }
-    // }
+
+    const { data, error } = await resend.emails.send({
+      from: 'hello@sidahq.com', // your verified sender domain
+      to: 'wahhtabla@gmail.com',
+      subject: `📘 Entrance Exam Submitted — ${examResults[0].title} Received!`,
+      html: `
+  <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: hsl(240,10%,3.9%); padding: 30px; color: hsl(0,0%,98%);">
+    <div style="max-width: 600px; margin:auto; background: hsl(240,10%,3.9%); border-radius: 12px; border: 1px solid hsl(0,0%,20%); overflow: hidden;">
+
+      <div style="background: linear-gradient(90deg, #ff8800, #ff4b2b); padding: 25px; text-align: center; color: white;">
+        <h2 style="margin: 0;">Exam Submitted Successfully 📝</h2>
+      </div>
+
+      <div style="padding: 25px; line-height: 1.6;">
+        <p style="font-size: 16px;">Namaste ${user.username || 'Candidate'} 🙏,</p>
+        <p style="font-size: 16px;">
+          Thank you for submitting your entrance exam for <strong>${examResults[0].title}</strong> at <strong>Wah Tabla</strong>!  
+          Your responses have been securely recorded.
+        </p>
+
+        <table style="width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 15px; color: hsl(0,0%,90%);">
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);"><strong>Candidate Name:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);">${user.username}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);"><strong>Email ID:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);">${user.email}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);"><strong>Exam Name:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);">${examResults[0].title}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);"><strong>Submission Date:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);">${new Date().toLocaleString('en-IN')}</td>
+          </tr>
+        </table>
+
+        <p style="margin-top: 25px; font-size: 16px;">
+          Our team will review your responses shortly. Once evaluation is complete, you'll receive an update regarding your results and next steps.
+        </p>
+
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="https://wahtabla.com/dashboard" 
+            style="background: #ff4b2b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+            View Your Dashboard →
+          </a>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid hsl(0,0%,15%); background: hsl(240,10%,5%); padding: 15px; text-align: center; font-size: 13px; color: hsl(0,0%,70%);">
+        © ${new Date().getFullYear()} Wah Tabla — Empowering the art of rhythm and learning.<br/>
+        <a href="https://wahtabla.com" style="color: #ff8800; text-decoration: none;">Visit WahTabla.com</a>
+      </div>
+
+    </div>
+  </div>
+  `
+    });
+
+    if(error) {
+      console.log('Error sending email:', error);
+    }
+
 
     res.status(200).json(
       new ApiResponse(200, {
