@@ -312,7 +312,6 @@ export const getEntranceExamAttemptsForReview = async (req: Request, res: Respon
       .from(entranceExamAttempts)
       .innerJoin(entranceExams, eq(entranceExamAttempts.entranceExamId, entranceExams.examId))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
-
     res.status(200).json({
       success: true,
       data: detailedAttempts,
@@ -1014,6 +1013,7 @@ export const updateEntranceExamAttempt = async (req: AdminRequest, res: Response
     }
 
     const attempt = attemptData[0];
+    console.log(attempt)
     if (attempt.gradedAt) {
       res.status(400).json({
         success: false,
