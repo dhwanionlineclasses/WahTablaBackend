@@ -106,7 +106,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
           </p>
 
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
-            To get started, please visit our <a href="https://wahtabla.com/courses" style="color:hsl(35, 100%, 60%); text-decoration: underline;">Courses Page</a> and choose the program best suited to your level of experience:
+            To get started, please visit our <a href="https://wahtabla.com/profile" style="color:hsl(35, 100%, 60%); text-decoration: underline;">Platform</a> and choose the program best suited to your level of experience:
           </p>
 
           <ul style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%); padding-left: 20px;">
@@ -541,7 +541,7 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
       expiresAt,
     });
 
-    const resetLink = `https://wahtabla.com/reset-password?token=${token}`;
+    const resetLink = `https://wahtabla.com/auth/reset-password?token=${token}`;
 
     const { data, error } = await resend.emails.send({
       from: 'hello@sidahq.com', // or your verified domain
