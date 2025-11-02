@@ -18,7 +18,7 @@ const createCheckoutSession = async (req: Request, res: Response): Promise<void>
         variable `courseName` and a multi-line comment delimiter ` */
       courseName, metadata, amount } = req.body;
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'cashapp'],
+      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
