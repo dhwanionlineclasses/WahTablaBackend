@@ -743,7 +743,7 @@ const submitEntranceMcqExam = asyncHandler(async (req: Request, res: Response, n
 
 
     const { data, error } = await resend.emails.send({
-      from: 'hello@sidahq.com', // your verified sender domain
+      from: 'hello@wahtabla.com', // your verified sender domain
       to: 'wahhtabla@gmail.com',
       subject: `📘 Entrance Exam Submitted — ${examResults[0].title} Received!`,
       html: `

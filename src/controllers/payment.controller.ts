@@ -121,7 +121,7 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
         console.log('✅ Order Item created successfully:', orderItem);
 
         const { data, error } = await resend.emails.send({
-          from: 'hello@sidahq.com', // your verified sender domain
+          from: 'hello@wahtabla.com', // your verified sender domain
           to: emailId,
           subject: `🎶 Payment Successful — Your ${itemName} is Ready!`,
           html: `
@@ -291,7 +291,7 @@ const verifyPayment = async (req: Request, res: Response): Promise<any> => {
       console.log('✅ Order Item created successfully:', orderItem);
 
       const { data, error } = await resend.emails.send({
-        from: 'hello@sidahq.com', // your verified sender domain
+        from: 'hello@wahtabla.com', // your verified sender domain
         to: emailId,
         subject: `🎶 Payment Successful — Your ${itemName} is Ready!`,
         html: `

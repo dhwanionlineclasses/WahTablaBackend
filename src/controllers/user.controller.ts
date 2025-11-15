@@ -81,7 +81,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     const { password: _, ...userWithoutPassword } = savedUser;
 
     const { data, error } = await resend.emails.send({
-      from: 'hello@sidahq.com', // or your verified domain
+      from: 'hello@wahtabla.com', // or your verified domain
       to: validatedData.email,
       subject: 'Welcome to Wah Tabla – Begin Your Musical Journey Today!',
       html: `
@@ -150,7 +150,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     });
 
     const { data: data2, error: error2 } = await resend.emails.send({
-      from: 'hello@sidahq.com', // your verified sender
+      from: 'hello@wahtabla.com', // your verified sender
       to: 'wahhtabla@gmail.com', // or your admin email
       subject: '🔔 New User Registration — Wah Tabla',
       html: `
@@ -544,7 +544,7 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
     const resetLink = `https://wahtabla.com/auth/reset-password?token=${token}`;
 
     const { data, error } = await resend.emails.send({
-      from: 'hello@sidahq.com', // or your verified domain
+      from: 'hello@wahtabla.com', // or your verified domain
       to: user[0].email,
       subject: 'Reset Your Wahtabla Password',
       html: `
