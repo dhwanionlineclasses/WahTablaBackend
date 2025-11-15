@@ -333,7 +333,7 @@ const verifyPayment = async (req: Request, res: Response): Promise<any> => {
             </p>
 
             <div style="text-align: center; margin-top: 30px;">
-              <a href="https://wahtabla.com/dashboard" 
+              <a href="https://wahtabla.com/profile" 
                 style="background: #ff4b2b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;">
                 Go to Dashboard →
               </a>
