@@ -1254,16 +1254,6 @@ export const getUserLastPurchase = async (req: Request, res: Response, next: Nex
       },
     });
 
-    // ====================================
-    // 2) Build purchasedDetails + startingVideos (your full logic)
-    // ====================================
-    const purchasedDetails: Record<string, any> = {};
-    const startingVideos: any[] = [];
-
-    // --- Your entire original processing logic goes here ---
-    // (Simply paste the same code exactly — omitted here for clarity)
-    // -------------------------------------------------------
-
     // 3) Get next indices for Month/Module/Year/Course
     const next = getNextIndices(
       userOrders.map(o => ({
@@ -1282,13 +1272,9 @@ export const getUserLastPurchase = async (req: Request, res: Response, next: Nex
       }))
     );
 
-    console.log({ next })
 
     res.status(200).json({
       success: true,
-      orders: userOrders,
-      purchasedDetails,
-      startingVideos,
       next,
     });
 
