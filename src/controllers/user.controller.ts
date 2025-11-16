@@ -679,6 +679,119 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
+const sendTestEmail = asyncHandler(async (req: Request, res: Response) => {
+  // get user details from frontend
+  // validation - not empty
+  // check if user exists: email
+  // hash password
+  // save user to db
+  // check for user creation
+  // send response
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'hello@wahtabla.com', // or your verified domain
+      to: 'jazzsarin28@gmail.com',
+      subject: 'Welcome to Wah Tabla – Begin Your Musical Journey Today!',
+      html: `
+    <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: hsl(240, 10%, 3.9%); padding: 30px; color: hsl(0, 0%, 98%);">
+      <div style="max-width: 600px; margin: auto; background: hsl(240, 10%, 3.9%); border-radius: 12px; overflow: hidden; border: 1px solid hsl(0, 0%, 20%);">
 
+        <!-- Logo -->
+        <div style="text-align: center; padding: 30px 20px; border-bottom: 1px solid hsl(0, 0%, 15%);">
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            <strong>Wah Tabla</strong>
+          </p>
+        </div>
 
-export { registerUser, loginUser, refreshAccessToken, logoutUser, changePassword, googleAuthController, getUsers, forgotPassword, resetPassword };
+        <!-- Greeting -->
+        <div style="padding: 30px 25px;">
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            Dear <strong>Student</strong>,
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            Welcome to <strong>Wahtabla</strong>! We are delighted to have you join our community of music learners and enthusiasts. Wahtabla is designed to help you master the art of Tabla — whether you are just starting or looking to refine your skills.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            To get started, please visit our <a href="https://wahtabla.com/profile" style="color:hsl(35, 100%, 60%); text-decoration: underline;">Platform</a> and choose the program best suited to your level of experience:
+          </p>
+
+          <ul style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%); padding-left: 20px;">
+            <li>🎵 <strong>Beginner Course:</strong> Perfect for those who are new to Tabla or Indian rhythm.</li>
+            <li>🎶 <strong>Intermediate Course:</strong> Designed for students who already have a foundation and want to build performance-level proficiency.</li>
+            <li>🥁 <strong>Advanced Course:</strong> For serious learners aspiring to perform or teach professionally.</li>
+          </ul>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            Once you’ve selected your course, simply follow the prompts to complete your enrollment. You will receive instant access to your lessons and learning resources.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            If you need help choosing the right level or have any questions, our support team is happy to assist — just write to us at <a href="mailto:support@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">support@wahtabla.com</a>.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
+            We look forward to being part of your musical journey!<br/>
+            Welcome aboard,<br/>
+            <strong>Team Wah Tabla</strong>
+          </p>
+
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="https://wahtabla.com" 
+              style="background: hsl(35, 100%, 60%); color: hsl(240, 10%, 3.9%);
+              padding: 12px 30px; text-decoration: none; border-radius: 8px;
+              font-weight: 600; font-size: 15px; letter-spacing: 0.5px;">
+              Visit Wahtabla
+            </a>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="border-top: 1px solid hsl(0, 0%, 15%); padding: 20px; text-align: center; font-size: 13px; color: hsl(0, 0%, 70%);">
+          © ${new Date().getFullYear()} Wahtabla — All Rights Reserved<br/>
+          <a href="https://wahtabla.com" style="color: hsl(35, 100%, 60%); text-decoration: none;">www.wahtabla.com</a>
+        </div>
+      </div>
+    </div>
+  `
+    });
+
+    if (error) {
+      res.status(400).json({
+        success: false,
+        message: error,
+      });
+    }
+
+    res
+      .status(201)
+      .json(
+        new ApiResponse(
+          200,
+          "Email sent successfully"
+        )
+      );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        message: error.errors[0].message,
+      });
+    }
+
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while registering the user",
+    });
+  }
+});
+
+export { registerUser, loginUser, refreshAccessToken, logoutUser, changePassword, googleAuthController, getUsers, forgotPassword, resetPassword, sendTestEmail };
