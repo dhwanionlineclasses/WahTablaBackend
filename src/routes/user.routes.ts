@@ -8,7 +8,8 @@ import {
     googleAuthController,
     getUsers,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    sendTestEmail
 } from "../controllers/user.controller";
 import verifyJWT from "../middlewares/auth.middleware";
 
@@ -17,6 +18,7 @@ const router = Router();
 router.route("/register").post(registerUser);
 router.route("/login").post(loginUser);
 router.route("/get").get(getUsers);
+// router.route("/email").get(sendTestEmail);
 router.route("/forgot-password").post(forgotPassword);
 router.route("/reset-password").post(resetPassword);
 router.route("/logout").post(verifyJWT, logoutUser);
