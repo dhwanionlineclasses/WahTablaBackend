@@ -25,7 +25,6 @@ import { videoAnalyticsSchema } from "../schemas/videoAnalyticsSchema";
 import { CourseData, ExamData, ExamWeek, ModuleData, MonthData, YearData } from "../@types/profile.types";
 
 
-
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user || !req.user.userId) {
@@ -995,3 +994,292 @@ function generateWeeksForMonth(
 
   return weeks;
 }
+
+interface OrderItemInput {
+  itemType: string; // loose type
+  itemName: string | null | undefined;
+}
+
+interface OrderInput {
+  orderId: number;
+  orderItems: OrderItemInput[];
+}
+
+function getNextIndices(orders?: OrderInput[]) {
+  if (!orders || orders.length === 0) {
+    return {
+      nextMonth: 1,
+      nextModule: 1,
+      nextYear: 1,
+      hasCourse: false,
+    };
+  }
+
+  let maxMonth = 0;
+  let maxModule = 0;
+  let maxYear = 0;
+  let hasCourse = false;
+
+  for (const order of orders) {
+    for (const item of order.orderItems) {
+      const type = item.itemType;
+      const name = item.itemName ?? "";
+
+      if (type === "Month") {
+        const match = name.match(/Month (\d+)/);
+        if (match) maxMonth = Math.max(maxMonth, +match[1]);
+      }
+
+      if (type === "Module") {
+        const match = name.match(/Module (\d+)/);
+        if (match) maxModule = Math.max(maxModule, +match[1]);
+      }
+
+      if (type === "Year") {
+        const match = name.match(/Year (\d+)/);
+        if (match) maxYear = Math.max(maxYear, +match[1]);
+      }
+
+      if (type === "Course") {
+        hasCourse = true;
+      }
+    }
+  }
+
+  return {
+    nextMonth: maxMonth ? maxMonth + 1 : 1,
+    nextModule: maxModule ? maxModule + 1 : 1,
+    nextYear: maxYear ? maxYear + 1 : 1,
+    hasCourse,
+  };
+}
+
+
+export const getUserLastPurchase = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.user || !req.user.userId) {
+      throw new ApiError(401, 'Unauthorized');
+    }
+    const userId = req.user.userId;
+
+    // Fetch user with profile
+    const user: UserWithProfile | undefined = await db.query.users.findFirst({
+      where: eq(users.userId, userId),
+      columns: { password: false },
+      with: { profile: { columns: { userId: false } } },
+    });
+
+    if (!user) throw new ApiError(404, 'User not found');
+
+    const userOrders = await db.query.orders.findMany({
+      where: (orders, { eq }) => eq(orders.userId, Number(userId)),
+      with: {
+        orderItems: {
+          columns: { itemType: true },
+          with: {
+            course: {
+              columns: { courseId: true, courseName: true },
+              with: {
+                years: {
+                  columns: { yearId: true, yearName: true },
+                  with: {
+                    modules: {
+                      columns: { moduleId: true, moduleName: true },
+                      with: {
+                        months: {
+                          columns: { monthId: true, monthName: true },
+                          with: {
+                            videos: {
+                              columns: {
+                                videoId: true,
+                                videoVimeoId: true,
+                                videoTitle: true,
+                                videoUrl: true,
+                                description: true,
+                                duration: true,
+                                thumbnailUrl: true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    exams: {
+                      columns: {
+                        examId: true,
+                        weekNumber: true,
+                        type: true,
+                        title: true,
+                        totalMarks: true,
+                      },
+                      with: {
+                        attempts: {
+                          columns: {
+                            attemptId: true,
+                            userId: true,
+                            attemptNumber: true,
+                            passed: true,
+                            submittedAt: true,
+                            gradedAt: true,
+                            gradedBy: true,
+                          },
+                          where: (attempts, { eq }) =>
+                            eq(attempts.userId, Number(userId)),
+                        },
+                      },
+                    },
+                  },
+                },
+                exams: {
+                  columns: {
+                    examId: true,
+                    weekNumber: true,
+                    type: true,
+                    title: true,
+                    totalMarks: true,
+                  },
+                  with: {
+                    attempts: {
+                      columns: {
+                        attemptId: true,
+                        userId: true,
+                        attemptNumber: true,
+                        passed: true,
+                        submittedAt: true,
+                        gradedAt: true,
+                        gradedBy: true,
+                      },
+                      where: (attempts, { eq }) =>
+                        eq(attempts.userId, Number(userId)),
+                    },
+                  },
+                },
+              },
+            },
+            year: {
+              columns: { yearId: true, yearName: true },
+              with: {
+                modules: {
+                  columns: { moduleId: true, moduleName: true },
+                  with: {
+                    months: {
+                      columns: { monthId: true, monthName: true },
+                      with: {
+                        videos: {
+                          columns: {
+                            videoId: true,
+                            videoVimeoId: true,
+                            videoTitle: true,
+                            videoUrl: true,
+                            description: true,
+                            duration: true,
+                            thumbnailUrl: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                course: { columns: { courseId: true, courseName: true } },
+                exams: {
+                  columns: {
+                    examId: true,
+                    weekNumber: true,
+                    type: true,
+                    title: true,
+                    totalMarks: true,
+                  },
+                  with: {
+                    attempts: {
+                      columns: {
+                        attemptId: true,
+                        userId: true,
+                        attemptNumber: true,
+                        passed: true,
+                        submittedAt: true,
+                        gradedAt: true,
+                        gradedBy: true,
+                      },
+                      where: (attempts, { eq }) =>
+                        eq(attempts.userId, Number(userId)),
+                    },
+                  },
+                },
+              },
+            },
+            module: {
+              columns: { moduleId: true, moduleName: true },
+              with: {
+                months: {
+                  columns: { monthId: true, monthName: true },
+                  with: {
+                    videos: {
+                      columns: {
+                        videoId: true,
+                        videoVimeoId: true,
+                        videoTitle: true,
+                        videoUrl: true,
+                        description: true,
+                        duration: true,
+                        thumbnailUrl: true,
+                      },
+                    },
+                  },
+                },
+                year: { columns: { yearId: true, yearName: true } },
+                course: { columns: { courseId: true, courseName: true } },
+              },
+            },
+            month: {
+              columns: { monthId: true, monthName: true },
+              with: {
+                videos: {
+                  columns: {
+                    videoId: true,
+                    videoVimeoId: true,
+                    videoTitle: true,
+                    videoUrl: true,
+                    description: true,
+                    duration: true,
+                    thumbnailUrl: true,
+                  },
+                },
+                module: { columns: { moduleId: true, moduleName: true } },
+                year: { columns: { yearId: true, yearName: true } },
+                course: { columns: { courseId: true, courseName: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // 3) Get next indices for Month/Module/Year/Course
+    const next = getNextIndices(
+      userOrders.map(o => ({
+        orderId: o.orderId,
+        orderItems: o.orderItems.map(i => ({
+          itemType: i.itemType,
+          itemName:
+            i.itemType === "Month"
+              ? i.month?.monthName
+              : i.itemType === "Module"
+                ? i.module?.moduleName
+                : i.itemType === "Year"
+                  ? i.year?.yearName
+                  : "Course"
+        }))
+      }))
+    );
+
+
+    res.status(200).json({
+      success: true,
+      next,
+    });
+
+  } catch (error) {
+    console.error('Error in getUserProfile:', error);
+    throw new ApiError(500, 'Internal Server Error');
+  }
+};

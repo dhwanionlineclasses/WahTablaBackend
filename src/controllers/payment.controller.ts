@@ -146,7 +146,7 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
               </tr>
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);"><strong>Amount Paid:</strong></td>
-                <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);">₹${totalAmount.toFixed(2)}</td>
+                <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);">₹${(totalAmount / 100).toFixed(2)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);"><strong>Payment ID:</strong></td>
@@ -314,7 +314,7 @@ const verifyPayment = async (req: Request, res: Response): Promise<any> => {
               </tr>
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);"><strong>Amount Paid:</strong></td>
-                <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);">₹${metadata.amount.toFixed(2)}</td>
+                <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);">₹${(metadata.amount / 100).toFixed(2)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid hsl(0,0%,25%);"><strong>Payment ID:</strong></td>
