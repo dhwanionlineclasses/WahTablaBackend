@@ -238,17 +238,18 @@ const createOrderId = async (req: Request, res: Response) => {
 
 const verifyPayment = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, metadata } =
+    const { orderCreationId, razorpayPaymentId, razorpaySignature, metadata } =
       req.body;
 
-    const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
+
+    const sign = `${orderCreationId}|${razorpayPaymentId}`;
 
     const expectedSign = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
       .update(sign)
       .digest("hex");
 
-    if (razorpay_signature === expectedSign) {
+    if (razorpaySignature && orderCreationId && razorpayPaymentId && expectedSign === razorpaySignature) {
       if (!metadata) throw new Error('Metadata is required');
 
       const emailId = metadata.email;
@@ -267,13 +268,13 @@ const verifyPayment = async (req: Request, res: Response): Promise<any> => {
       const userId = user[0].userId;
       const username = user[0].username;
 
-      const paymentIntent = "Razorpay Payment ID: " + razorpay_payment_id;
+      const paymentIntent = "Razorpay Payment ID: " + razorpayPaymentId;
 
       // Insert order into the database
       const [order] = await db.insert(orders).values({
         userId,
         orderDate: new Date(),
-        totalAmount: metadata.amount.toFixed(2),
+        totalAmount: (metadata.amount / 100).toFixed(2),
         paymentStatus: 'succeeded',
         paymentIntent,
       }).returning();
@@ -286,9 +287,6 @@ const verifyPayment = async (req: Request, res: Response): Promise<any> => {
       });
 
       await db.update(users).set({ purchasePlan: metadata.type }).where(eq(users.userId, userId));
-
-      console.log('✅ Order created successfully:', order);
-      console.log('✅ Order Item created successfully:', orderItem);
 
       const { data, error } = await resend.emails.send({
         from: 'hello@wahtabla.com', // your verified sender domain
