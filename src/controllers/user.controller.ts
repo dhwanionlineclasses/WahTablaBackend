@@ -120,7 +120,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
           </p>
 
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
-            If you need help choosing the right level or have any questions, our support team is happy to assist — just write to us at <a href="mailto:support@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">support@wahtabla.com</a>.
+            If you need help choosing the right level or have any questions, our support team is happy to assist — just write to us at <a href="mailto:hello@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">hello@wahtabla.com</a>.
           </p>
 
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
@@ -580,7 +580,7 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
         </p>
 
         <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
-          For any help, contact our support team at <a href="mailto:support@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">support@wahtabla.com</a>.
+          For any help, contact our support team at <a href="mailto:hello@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">hello@wahtabla.com</a>.
         </p>
 
         <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
@@ -728,7 +728,7 @@ const sendTestEmail = asyncHandler(async (req: Request, res: Response) => {
           </p>
 
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
-            If you need help choosing the right level or have any questions, our support team is happy to assist — just write to us at <a href="mailto:support@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">support@wahtabla.com</a>.
+            If you need help choosing the right level or have any questions, our support team is happy to assist — just write to us at <a href="mailto:hello@wahtabla.com" style="color:hsl(35, 100%, 60%); text-decoration: underline;">hello@wahtabla.com</a>.
           </p>
 
           <p style="font-size: 16px; line-height: 1.7; color: hsl(0, 0%, 90%);">
