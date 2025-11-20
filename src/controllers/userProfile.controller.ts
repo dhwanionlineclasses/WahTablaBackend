@@ -515,6 +515,16 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
     // existing logic to insert startingVideos into videoAnalytics
     if (startingVideos.length > 0) {
       for (const vid of startingVideos) {
+        const existingCourse = await db
+          .select()
+          .from(videoAnalytics)
+          .where(
+            and(eq(videoAnalytics.userId, userId), eq(videoAnalytics.courseId, vid.courseId), eq(videoAnalytics.yearId, vid.yearId))
+          )
+          .limit(1);
+
+        if (existingCourse.length) continue;
+
         const existing = await db
           .select()
           .from(videoAnalytics)
