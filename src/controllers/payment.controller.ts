@@ -20,6 +20,12 @@ const razorpay = new Razorpay({
 const SUCCESS_URL = `${process.env.NEXT_BASE_URL!}/profile`
 const CANCEL_URL = `${process.env.NEXT_BASE_URL!}/buy-course`
 
+const getUSDtoINR = async () => {
+  const res = await fetch("https://open.er-api.com/v6/latest/USD");
+  const data = await res.json();
+  return data.rates.INR;
+};
+
 const createCheckoutSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const { /* The above code appears to be a comment section in a TypeScript file. It includes the
@@ -56,7 +62,7 @@ const createCheckoutSession = async (req: Request, res: Response): Promise<void>
 }
 
 const handleStripeWebhook = async (req: Request, res: Response) => {
-
+  const exchangeRate = await getUSDtoINR();
   const signature = req.headers["stripe-signature"]!;
   const stripePayload = (req as any).rawBody || req.body;
   try {
@@ -99,11 +105,13 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
 
         const paymentIntent = session.payment_intent as string;
 
+        const totalAmountInINR = totalAmount * exchangeRate;
+
         // Insert order into the database
         const [order] = await db.insert(orders).values({
           userId,
           orderDate: new Date(),
-          totalAmount: totalAmount.toFixed(2),
+          totalAmount: totalAmountInINR.toFixed(2),
           paymentStatus: 'succeeded',
           paymentIntent,
         }).returning();
@@ -191,12 +199,14 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
 
       case "charge.failed":
         const charge = event.data.object as Stripe.Charge;
+        const totalAmountInINR = charge.amount * exchangeRate;
+
 
         // Insert failed payment into the database
         await db.insert(orders).values({
           userId: parseInt(charge.metadata.userId, 10), // 
           orderDate: new Date(),
-          totalAmount: charge.amount.toFixed(2),
+          totalAmount: totalAmountInINR.toFixed(2),
           paymentStatus: 'failed',
           paymentIntent: charge.payment_intent as string,
         });
