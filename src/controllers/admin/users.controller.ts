@@ -58,6 +58,7 @@ const getUsersBasicDetails = asyncHandler(async (req: AdminRequest, res: Respons
         totalOrders: sql<number>`COUNT(DISTINCT ${orders.orderId})`.as('totalOrders'),
         totalSpent: sql<string>`COALESCE(SUM(${orders.totalAmount}), 0)`.as('totalSpent'),
         lastOrderDate: sql<Date>`MAX(${orders.orderDate})`.as('lastOrderDate'),
+        currency: sql<string>`MAX(${orders.currency})`.as('currency'),
       })
       .from(users)
       .leftJoin(userProfiles, eq(users.userId, userProfiles.userId))
@@ -87,7 +88,7 @@ const getUsersBasicDetails = asyncHandler(async (req: AdminRequest, res: Respons
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
 
     const totalCount = totalCountResult[0]?.count || 0;
-
+    var index = 0;
     const formattedUsers = await Promise.all(usersData.map(async user => {
       // fetch all succeeded orders for this user
       const userOrders = await db.query.orders.findMany({
@@ -440,7 +441,6 @@ const getUsersBasicDetails = asyncHandler(async (req: AdminRequest, res: Respons
         .from(videoAnalytics)
         .where(eq(videoAnalytics.userId, Number(user.userId)));
 
-
       return {
         userId: user.userId,
         username: user.username,
@@ -455,7 +455,8 @@ const getUsersBasicDetails = asyncHandler(async (req: AdminRequest, res: Respons
         lastOrderDate: user.lastOrderDate,
         hasPurchases: (user.totalOrders || 0) > 0,
         purchasedDetails, // ✅ attached here
-        analytics: analytics.length > 0 ? analytics : []
+        analytics: analytics.length > 0 ? analytics : [],
+        currency: user.currency || 'USD'
       };
     }));
 
