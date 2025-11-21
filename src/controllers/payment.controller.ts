@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { resend } from "../lib/resend";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { char } from "drizzle-orm/mysql-core";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia'
@@ -105,13 +106,11 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
 
         const paymentIntent = session.payment_intent as string;
 
-        const totalAmountInINR = totalAmount * exchangeRate;
-
         // Insert order into the database
         const [order] = await db.insert(orders).values({
           userId,
           orderDate: new Date(),
-          totalAmount: totalAmountInINR.toFixed(2),
+          totalAmount: totalAmount.toFixed(2),
           paymentStatus: 'succeeded',
           paymentIntent,
         }).returning();
@@ -199,14 +198,13 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
 
       case "charge.failed":
         const charge = event.data.object as Stripe.Charge;
-        const totalAmountInINR = charge.amount * exchangeRate;
 
 
         // Insert failed payment into the database
         await db.insert(orders).values({
           userId: parseInt(charge.metadata.userId, 10), // 
           orderDate: new Date(),
-          totalAmount: totalAmountInINR.toFixed(2),
+          totalAmount: (charge.amount / 100).toFixed(2),
           paymentStatus: 'failed',
           paymentIntent: charge.payment_intent as string,
         });
@@ -287,6 +285,7 @@ const verifyPayment = async (req: Request, res: Response): Promise<any> => {
         totalAmount: (metadata.amount / 100).toFixed(2),
         paymentStatus: 'succeeded',
         paymentIntent,
+        currency: 'INR',
       }).returning();
 
       // Insert order item
