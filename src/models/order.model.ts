@@ -13,6 +13,7 @@ export const orders = pgTable('orders', {
   totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
   paymentStatus: varchar('payment_status', { length: 20 }).notNull(),
   paymentIntent: varchar('payment_intent', { length: 255 }).notNull(),
+  currency: varchar('currency', { length: 10 }).default('USD').notNull(),
 });
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
