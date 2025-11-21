@@ -285,6 +285,7 @@ const verifyPayment = async (req: Request, res: Response): Promise<any> => {
         totalAmount: (metadata.amount / 100).toFixed(2),
         paymentStatus: 'succeeded',
         paymentIntent,
+        currency: 'INR',
       }).returning();
 
       // Insert order item
